@@ -1,0 +1,25 @@
+[package]
+name = "ngap-codec"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "Apache-2.0"
+description = "Rust NGAP Aligned PER codec compatible with github.com/acore2026/ngap"
+repository = "https://github.com/acore2026/ngap"
+build = "build.rs"
+
+[dependencies]
+asn1-codecs = "=0.7.2"
+asn1_codecs_derive = "=0.7.2"
+bitvec = "=1.0.1"
+log = "=0.4.27"
+
+[build-dependencies]
+asn1-compiler = "=0.7.2"
+
+[dev-dependencies]
+hex = "=0.4.3"
+
+[lib]
+name = "ngap_codec"
+path = "src/lib.rs"
