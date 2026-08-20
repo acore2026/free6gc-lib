@@ -1,61 +1,44 @@
 package acn_test
 
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"github.com/acore2026/free6gc-lib/nas/acn"
 )
 
-func TestGroupMessageRoundTrips(t *testing.T) {
-	tests := []acn.Message{
-		&acn.AgentGroupingInvitation{
-			Header:        acn.Header{TransactionID: 49},
-			GroupID:       "g1",
-			SourceAgentID: "a1",
-			TargetAgentID: "a2",
-			TaskID:        "task-1",
-			ExpiresAt:     1786608030000,
-			Proof:         []byte("sig"),
-		},
-		&acn.AgentGroupingInvitationResponse{
-			Header:       acn.Header{TransactionID: 49},
-			GroupID:      "g1",
-			AgentID:      "a2",
-			Decision:     acn.GroupingDecisionAccept,
-			RejectReason: acn.GroupingRejectReasonNone,
-			Timestamp:    1786608010000,
-			Proof:        []byte("sig"),
-		},
-		&acn.AgentGroupInfoNotification{
-			Header:        acn.Header{TransactionID: 50},
-			GroupID:       "g1",
-			TargetAgentID: "a2",
-			GroupConfig:   json.RawMessage(`{"relay":"r1"}`),
-		},
-		&acn.AgentGroupInfoNotificationResponse{
-			Header:       acn.Header{TransactionID: 50},
-			GroupID:      "g1",
-			AgentID:      "a2",
-			Result:       acn.GroupInfoApplyResultSuccess,
-			FailureCause: acn.GroupInfoFailureCauseNone,
-		},
+func TestGroupingInvitationWireFormat(t *testing.T) {
+	message := &acn.AgentGroupingInvitation{
+		Header:             acn.Header{TransactionID: 0x31},
+		GroupConfig:        json.RawMessage(`{ "group_name" : "task-patrol", "scope":"private", "max_members":5 }`),
+		GroupAdministrator: json.RawMessage(`{ "agent_id" : "a1", "skills":["AR"], "future":true }`),
 	}
+	wire, err := acn.Marshal(message)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantHex := "011031" + lveHex(message.GroupConfig) + lveHex(message.GroupAdministrator)
+	want, err := hex.DecodeString(wantHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(wire) != string(want) {
+		t.Fatalf("wire = %x, want %x", wire, want)
+	}
+	decoded, err := acn.Unmarshal(acn.Downlink, wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invitation := decoded.(*acn.AgentGroupingInvitation)
+	if string(invitation.GroupConfig) != string(message.GroupConfig) || string(invitation.GroupAdministrator) != string(message.GroupAdministrator) {
+		t.Fatalf("unexpected decoded invitation: %#v", invitation)
+	}
+}
 
-	for _, message := range tests {
-		t.Run(message.MessageType().String(), func(t *testing.T) {
-			payload, err := acn.Marshal(message)
-			if err != nil {
-				t.Fatalf("Marshal() error = %v", err)
-			}
-			decoded, err := acn.Unmarshal(message.Direction(), payload)
-			if err != nil {
-				t.Fatalf("Unmarshal() error = %v", err)
-			}
-			if !reflect.DeepEqual(decoded, message) {
-				t.Fatalf("round trip mismatch:\n got: %#v\nwant: %#v", decoded, message)
-			}
-		})
-	}
+func lveHex(value []byte) string {
+	length := make([]byte, 2)
+	binary.BigEndian.PutUint16(length, uint16(len(value)))
+	return hex.EncodeToString(append(length, value...))
 }

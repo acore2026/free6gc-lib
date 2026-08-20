@@ -1,74 +1,65 @@
 package acn
 
-func (c *Codec) encodeAgentProfileUpdateRequest(
-	output *encoder,
-	message *AgentProfileUpdateRequest,
-) error {
+func (c *Codec) encodeAgentProfileUpdateRequest(output *encoder, message *AgentProfileUpdateRequest) error {
+	if err := validateString(message.RequestID, "request_id", c.limits.MaxTaskID); err != nil {
+		return err
+	}
 	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
 		return err
 	}
-	if !validPriority(message.Priority) {
-		return newProtocolError(ErrorCodeInvalidValue, "priority", -1, ErrInvalidValue)
-	}
-	if err := validateBytes(message.Signature, "signature", c.limits.MaxSignature); err != nil {
+	if err := validateJSONArray(message.UpdateItems, "update_items", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if err := validateJSONArray(message.VCList, "vc_list", c.limits.MaxJSONContainer); err != nil {
+	if err := validateOptionalJSONArray(message.Credentials, "credentials", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
+	output.lve([]byte(message.RequestID))
 	output.lve([]byte(message.AgentID))
-	output.uint8(uint8(message.Priority))
+	output.lve(message.UpdateItems)
+	output.lve(message.Credentials)
 	output.uint64(message.Timestamp)
-	output.lve(message.Signature)
-	output.lve(message.VCList)
-	return nil
+	return c.encodeProof(output, message.Proof, "proof")
 }
 
-func (c *Codec) decodeAgentProfileUpdateRequest(
-	input *decoder,
-	header Header,
-) (Message, error) {
+func (c *Codec) decodeAgentProfileUpdateRequest(input *decoder, header Header) (Message, error) {
 	message := &AgentProfileUpdateRequest{Header: header}
 	var err error
+	if message.RequestID, err = input.lveString("request_id", c.limits.MaxTaskID); err != nil {
+		return nil, err
+	}
 	if message.AgentID, err = input.lveString("agent_id", c.limits.MaxAgentID); err != nil {
 		return nil, err
 	}
-	priority, err := input.uint8("priority")
+	updateItems, err := input.lveBytes("update_items", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	message.Priority = Priority(priority)
-	if !validPriority(message.Priority) {
-		return nil, newProtocolError(ErrorCodeInvalidValue, "priority", input.offset-1, ErrInvalidValue)
+	if err := validateJSONArray(updateItems, "update_items", c.limits.MaxJSONContainer); err != nil {
+		return nil, err
 	}
+	message.UpdateItems = cloneBytes(updateItems)
+	credentials, err := input.lveOptionalBytes("credentials", c.limits.MaxJSONContainer)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateOptionalJSONArray(credentials, "credentials", c.limits.MaxJSONContainer); err != nil {
+		return nil, err
+	}
+	message.Credentials = cloneBytes(credentials)
 	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
 		return nil, err
 	}
-	signature, err := input.lveBytes("signature", c.limits.MaxSignature)
-	if err != nil {
+	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
 		return nil, err
 	}
-	message.Signature = cloneBytes(signature)
-	vcList, err := input.lveBytes("vc_list", c.limits.MaxJSONContainer)
-	if err != nil {
-		return nil, err
-	}
-	if err := validateJSONArray(vcList, "vc_list", c.limits.MaxJSONContainer); err != nil {
-		return nil, err
-	}
-	message.VCList = cloneBytes(vcList)
 	return message, nil
 }
 
-func validPriority(value Priority) bool {
-	return value <= PriorityLow
-}
-
 func encodeAgentProfileUpdateReject(output *encoder, message *AgentProfileUpdateReject) error {
-	if !validProfileUpdateRejectCause(message.Cause) {
+	if message.Cause < ProfileUpdateRejectAgentInvalid || message.Cause > ProfileUpdateRejectInternalError {
 		return newProtocolError(ErrorCodeInvalidValue, "reject_cause", -1, ErrInvalidValue)
 	}
-	if !validProfileUpdateFailedField(message.FailedField) {
+	if message.FailedField < ProfileUpdateFieldUnspecified || message.FailedField > ProfileUpdateFieldProof {
 		return newProtocolError(ErrorCodeInvalidValue, "failed_field", -1, ErrInvalidValue)
 	}
 	output.uint8(uint8(message.Cause))
@@ -81,27 +72,15 @@ func decodeAgentProfileUpdateReject(input *decoder, header Header) (Message, err
 	if err != nil {
 		return nil, err
 	}
-	if !validProfileUpdateRejectCause(ProfileUpdateRejectCause(cause)) {
-		return nil, newProtocolError(ErrorCodeInvalidValue, "reject_cause", input.offset-1, ErrInvalidValue)
-	}
-	failedField, err := input.uint8("failed_field")
+	field, err := input.uint8("failed_field")
 	if err != nil {
 		return nil, err
 	}
-	if !validProfileUpdateFailedField(ProfileUpdateFailedField(failedField)) {
-		return nil, newProtocolError(ErrorCodeInvalidValue, "failed_field", input.offset-1, ErrInvalidValue)
+	message := &AgentProfileUpdateReject{
+		Header: header, Cause: ProfileUpdateRejectCause(cause), FailedField: ProfileUpdateFailedField(field),
 	}
-	return &AgentProfileUpdateReject{
-		Header:      header,
-		Cause:       ProfileUpdateRejectCause(cause),
-		FailedField: ProfileUpdateFailedField(failedField),
-	}, nil
-}
-
-func validProfileUpdateRejectCause(value ProfileUpdateRejectCause) bool {
-	return value >= ProfileUpdateRejectInvalidAgentID && value <= ProfileUpdateRejectInternalError
-}
-
-func validProfileUpdateFailedField(value ProfileUpdateFailedField) bool {
-	return value >= ProfileUpdateFieldUnspecified && value <= ProfileUpdateFieldVCList
+	if err := encodeAgentProfileUpdateReject(&encoder{}, message); err != nil {
+		return nil, err
+	}
+	return message, nil
 }

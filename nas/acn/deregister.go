@@ -87,9 +87,9 @@ func decodeAgentDeregisterReject(input *decoder, header Header) (Message, error)
 }
 
 func validDeregisterRejectCause(value DeregisterRejectCause) bool {
-	return value >= DeregisterRejectUnknownAgentID && value <= DeregisterRejectBackendFailure
+	return value >= DeregisterRejectAgentNotFound && value <= DeregisterRejectInternalError
 }
 
 func validDeregisterFailedField(value DeregisterFailedField) bool {
-	return value >= DeregisterFieldUnspecified && value <= DeregisterFieldUEAgentBinding
+	return value >= DeregisterFieldUnspecified && value <= DeregisterFieldSignature
 }

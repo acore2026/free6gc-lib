@@ -7,10 +7,11 @@ import (
 )
 
 func FuzzUnmarshalACN(f *testing.F) {
-	for _, vector := range goldenVectors() {
-		wire := decodeHex(f, vector.wireHex)
-		f.Add(uint8(vector.direction), wire[6:])
+	payload, err := acn.Marshal(&acn.AgentDeregisterAccept{Header: acn.Header{TransactionID: 1}})
+	if err != nil {
+		f.Fatal(err)
 	}
+	f.Add(uint8(acn.Downlink), payload)
 
 	f.Fuzz(func(t *testing.T, rawDirection uint8, payload []byte) {
 		direction := acn.Direction(rawDirection)
@@ -30,9 +31,11 @@ func FuzzUnmarshalACN(f *testing.F) {
 }
 
 func FuzzDecodePlainACNNAS(f *testing.F) {
-	for _, vector := range goldenVectors() {
-		f.Add(uint8(vector.direction), decodeHex(f, vector.wireHex))
+	wire, err := acn.EncodePlainNAS(&acn.AgentDeregisterAccept{Header: acn.Header{TransactionID: 1}})
+	if err != nil {
+		f.Fatal(err)
 	}
+	f.Add(uint8(acn.Downlink), wire)
 
 	f.Fuzz(func(t *testing.T, rawDirection uint8, wire []byte) {
 		direction := acn.Direction(rawDirection)

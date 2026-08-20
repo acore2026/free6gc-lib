@@ -3,15 +3,10 @@ package acn
 import "encoding/json"
 
 const (
-	// Version1 is the only ACN protocol version supported by this package.
-	Version1 uint8 = 0x01
-
-	// PayloadContainerTypeACN is a private prototype allocation, not a 3GPP
-	// payload-container type.
+	Version1                uint8 = 0x01
 	PayloadContainerTypeACN uint8 = 0x0e
 )
 
-// Direction identifies the NAS transport direction allowed for an ACN message.
 type Direction uint8
 
 const (
@@ -30,7 +25,6 @@ func (d Direction) String() string {
 	}
 }
 
-// MessageType identifies an ACN control PDU.
 type MessageType uint8
 
 const (
@@ -46,49 +40,53 @@ const (
 	MessageTypeAgentSearchResponse                MessageType = 0x0a
 	MessageTypeAgentSearchReject                  MessageType = 0x0b
 	MessageTypeAgentDeregisterReject              MessageType = 0x0c
+	MessageTypeAgentGroupingRequest               MessageType = 0x0d
+	MessageTypeAgentGroupingAccept                MessageType = 0x0e
+	MessageTypeAgentGroupingReject                MessageType = 0x0f
 	MessageTypeAgentGroupingInvitation            MessageType = 0x10
 	MessageTypeAgentGroupingInvitationResponse    MessageType = 0x11
 	MessageTypeAgentGroupInfoNotification         MessageType = 0x12
 	MessageTypeAgentGroupInfoNotificationResponse MessageType = 0x13
+	MessageTypeAgentNetworkAbilityRequest         MessageType = 0x14
+	MessageTypeAgentNetworkAbilityResponse        MessageType = 0x15
+	MessageTypeAgentNetworkAbilityReject          MessageType = 0x16
+	MessageTypeAgentPublishRequest                MessageType = 0x17
+	MessageTypeAgentPublishAccept                 MessageType = 0x18
+	MessageTypeAgentPublishReject                 MessageType = 0x19
 )
 
 func (t MessageType) String() string {
-	switch t {
-	case MessageTypeAgentRegisterRequest:
-		return "ACN_AGENT_REGISTER_REQUEST"
-	case MessageTypeAgentRegisterAccept:
-		return "ACN_AGENT_REGISTER_ACCEPT"
-	case MessageTypeAgentRegisterReject:
-		return "ACN_AGENT_REGISTER_REJECT"
-	case MessageTypeAgentDeregisterRequest:
-		return "ACN_AGENT_DEREGISTER_REQUEST"
-	case MessageTypeAgentDeregisterAccept:
-		return "ACN_AGENT_DEREGISTER_ACCEPT"
-	case MessageTypeAgentProfileUpdateRequest:
-		return "ACN_AGENT_PROFILE_UPDATE_REQUEST"
-	case MessageTypeAgentProfileUpdateAccept:
-		return "ACN_AGENT_PROFILE_UPDATE_ACCEPT"
-	case MessageTypeAgentProfileUpdateReject:
-		return "ACN_AGENT_PROFILE_UPDATE_REJECT"
-	case MessageTypeAgentSearchRequest:
-		return "ACN_AGENT_SEARCH_REQUEST"
-	case MessageTypeAgentSearchResponse:
-		return "ACN_AGENT_SEARCH_RESPONSE"
-	case MessageTypeAgentSearchReject:
-		return "ACN_AGENT_SEARCH_REJECT"
-	case MessageTypeAgentDeregisterReject:
-		return "ACN_AGENT_DEREGISTER_REJECT"
-	case MessageTypeAgentGroupingInvitation:
-		return "ACN_AGENT_GROUPING_INVITATION"
-	case MessageTypeAgentGroupingInvitationResponse:
-		return "ACN_AGENT_GROUPING_INVITATION_RESPONSE"
-	case MessageTypeAgentGroupInfoNotification:
-		return "ACN_AGENT_GROUPINFO_NOTIFICATION"
-	case MessageTypeAgentGroupInfoNotificationResponse:
-		return "ACN_AGENT_GROUPINFO_NOTIFICATION_RESPONSE"
-	default:
-		return "ACN_MESSAGE_UNKNOWN"
+	names := map[MessageType]string{
+		MessageTypeAgentRegisterRequest:               "ACN_AGENT_REGISTER_REQUEST",
+		MessageTypeAgentRegisterAccept:                "ACN_AGENT_REGISTER_ACCEPT",
+		MessageTypeAgentRegisterReject:                "ACN_AGENT_REGISTER_REJECT",
+		MessageTypeAgentDeregisterRequest:             "ACN_AGENT_DEREGISTER_REQUEST",
+		MessageTypeAgentDeregisterAccept:              "ACN_AGENT_DEREGISTER_ACCEPT",
+		MessageTypeAgentDeregisterReject:              "ACN_AGENT_DEREGISTER_REJECT",
+		MessageTypeAgentProfileUpdateRequest:          "ACN_AGENT_PROFILE_UPDATE_REQUEST",
+		MessageTypeAgentProfileUpdateAccept:           "ACN_AGENT_PROFILE_UPDATE_ACCEPT",
+		MessageTypeAgentProfileUpdateReject:           "ACN_AGENT_PROFILE_UPDATE_REJECT",
+		MessageTypeAgentSearchRequest:                 "ACN_AGENT_SEARCH_REQUEST",
+		MessageTypeAgentSearchResponse:                "ACN_AGENT_SEARCH_RESPONSE",
+		MessageTypeAgentSearchReject:                  "ACN_AGENT_SEARCH_REJECT",
+		MessageTypeAgentGroupingRequest:               "ACN_AGENT_GROUPING_REQUEST",
+		MessageTypeAgentGroupingAccept:                "ACN_AGENT_GROUPING_ACCEPT",
+		MessageTypeAgentGroupingReject:                "ACN_AGENT_GROUPING_REJECT",
+		MessageTypeAgentGroupingInvitation:            "ACN_AGENT_GROUPING_INVITATION",
+		MessageTypeAgentGroupingInvitationResponse:    "ACN_AGENT_GROUPING_INVITATION_RESPONSE",
+		MessageTypeAgentGroupInfoNotification:         "ACN_AGENT_GROUPINFO_NOTIFICATION",
+		MessageTypeAgentGroupInfoNotificationResponse: "ACN_AGENT_GROUPINFO_NOTIFICATION_RESPONSE",
+		MessageTypeAgentNetworkAbilityRequest:         "ACN_AGENT_NETWORK_ABILITY_REQUEST",
+		MessageTypeAgentNetworkAbilityResponse:        "ACN_AGENT_NETWORK_ABILITY_RESPONSE",
+		MessageTypeAgentNetworkAbilityReject:          "ACN_AGENT_NETWORK_ABILITY_REJECT",
+		MessageTypeAgentPublishRequest:                "ACN_AGENT_PUBLISH_REQUEST",
+		MessageTypeAgentPublishAccept:                 "ACN_AGENT_PUBLISH_ACCEPT",
+		MessageTypeAgentPublishReject:                 "ACN_AGENT_PUBLISH_REJECT",
 	}
+	if name, ok := names[t]; ok {
+		return name
+	}
+	return "ACN_MESSAGE_UNKNOWN"
 }
 
 func (t MessageType) direction() (Direction, bool) {
@@ -97,8 +95,11 @@ func (t MessageType) direction() (Direction, bool) {
 		MessageTypeAgentDeregisterRequest,
 		MessageTypeAgentProfileUpdateRequest,
 		MessageTypeAgentSearchRequest,
+		MessageTypeAgentGroupingRequest,
 		MessageTypeAgentGroupingInvitationResponse,
-		MessageTypeAgentGroupInfoNotificationResponse:
+		MessageTypeAgentGroupInfoNotificationResponse,
+		MessageTypeAgentNetworkAbilityRequest,
+		MessageTypeAgentPublishRequest:
 		return Uplink, true
 	case MessageTypeAgentRegisterAccept,
 		MessageTypeAgentRegisterReject,
@@ -108,29 +109,30 @@ func (t MessageType) direction() (Direction, bool) {
 		MessageTypeAgentProfileUpdateReject,
 		MessageTypeAgentSearchResponse,
 		MessageTypeAgentSearchReject,
+		MessageTypeAgentGroupingAccept,
+		MessageTypeAgentGroupingReject,
 		MessageTypeAgentGroupingInvitation,
-		MessageTypeAgentGroupInfoNotification:
+		MessageTypeAgentGroupInfoNotification,
+		MessageTypeAgentNetworkAbilityResponse,
+		MessageTypeAgentNetworkAbilityReject,
+		MessageTypeAgentPublishAccept,
+		MessageTypeAgentPublishReject:
 		return Downlink, true
 	default:
 		return 0, false
 	}
 }
 
-// Header is common to every decoded and encoded ACN message. Version and
-// message type are derived from the concrete Go type.
 type Header struct {
 	TransactionID uint8
 }
 
-func (h Header) GetHeader() Header {
-	return h
-}
+func (h Header) GetHeader() Header { return h }
 
 type messageMarker struct{}
 
 func (messageMarker) isACNMessage() {}
 
-// Message is the closed set of ACN version 1 messages.
 type Message interface {
 	GetHeader() Header
 	MessageType() MessageType
@@ -141,15 +143,13 @@ type Message interface {
 type AgentRegisterRequest struct {
 	messageMarker
 	Header
-	Owner           string
-	AgentName       string
-	PublicKey       []byte
-	Description     string
-	Timestamp       uint64
-	Signature       []byte
-	Region          string
-	OS              string
-	SoftwareVersion string
+	Owner       string
+	AgentName   string
+	PublicKey   []byte
+	Description string
+	Timestamp   uint64
+	Signature   []byte
+	Metadata    json.RawMessage
 }
 
 func (*AgentRegisterRequest) MessageType() MessageType { return MessageTypeAgentRegisterRequest }
@@ -168,28 +168,27 @@ func (*AgentRegisterAccept) Direction() Direction     { return Downlink }
 type RegisterRejectCause uint8
 
 const (
-	RegisterRejectInvalidMandatoryField RegisterRejectCause = 0x01
-	RegisterRejectOwnerNotAllowed       RegisterRejectCause = 0x02
-	RegisterRejectInvalidPublicKey      RegisterRejectCause = 0x03
-	RegisterRejectInvalidSignature      RegisterRejectCause = 0x04
-	RegisterRejectInvalidTimestamp      RegisterRejectCause = 0x05
-	RegisterRejectAgentIDAllocation     RegisterRejectCause = 0x06
-	RegisterRejectInternalError         RegisterRejectCause = 0x07
+	RegisterRejectRequestValidationFailed RegisterRejectCause = iota + 1
+	RegisterRejectOwnerNotAllowed
+	RegisterRejectPublicKeyAlgorithmUnsupported
+	RegisterRejectPublicKeyInvalid
+	RegisterRejectSignatureInvalid
+	RegisterRejectTimestampInvalid
+	RegisterRejectIDAllocationFailed
+	RegisterRejectInternalError
 )
 
 type RegisterFailedField uint8
 
 const (
-	RegisterFieldUnspecified     RegisterFailedField = 0x00
-	RegisterFieldOwner           RegisterFailedField = 0x01
-	RegisterFieldAgentName       RegisterFailedField = 0x02
-	RegisterFieldPublicKey       RegisterFailedField = 0x03
-	RegisterFieldDescription     RegisterFailedField = 0x04
-	RegisterFieldTimestamp       RegisterFailedField = 0x05
-	RegisterFieldSignature       RegisterFailedField = 0x06
-	RegisterFieldRegion          RegisterFailedField = 0x07
-	RegisterFieldOS              RegisterFailedField = 0x08
-	RegisterFieldSoftwareVersion RegisterFailedField = 0x09
+	RegisterFieldUnspecified RegisterFailedField = iota
+	RegisterFieldOwner
+	RegisterFieldAgentName
+	RegisterFieldPublicKey
+	RegisterFieldDescription
+	RegisterFieldTimestamp
+	RegisterFieldSignature
+	RegisterFieldMetadata
 )
 
 type AgentRegisterReject struct {
@@ -205,13 +204,13 @@ func (*AgentRegisterReject) Direction() Direction     { return Downlink }
 type DeregistrationReason uint8
 
 const (
-	DeregistrationReasonNormal        DeregistrationReason = 0x00
-	DeregistrationReasonUninstalled   DeregistrationReason = 0x01
-	DeregistrationReasonReplaced      DeregistrationReason = 0x02
-	DeregistrationReasonUserRequest   DeregistrationReason = 0x03
-	DeregistrationReasonSecurityEvent DeregistrationReason = 0x04
-	DeregistrationReasonRetired       DeregistrationReason = 0x05
-	DeregistrationReasonOther         DeregistrationReason = 0xff
+	DeregistrationReasonNormal DeregistrationReason = iota
+	DeregistrationReasonUninstalled
+	DeregistrationReasonReplaced
+	DeregistrationReasonUserRequest
+	DeregistrationReasonSecurityEvent
+	DeregistrationReasonRetired
+	DeregistrationReasonOther DeregistrationReason = 0xff
 )
 
 type AgentDeregisterRequest struct {
@@ -223,41 +222,35 @@ type AgentDeregisterRequest struct {
 	Signature []byte
 }
 
-func (*AgentDeregisterRequest) MessageType() MessageType {
-	return MessageTypeAgentDeregisterRequest
-}
-func (*AgentDeregisterRequest) Direction() Direction { return Uplink }
+func (*AgentDeregisterRequest) MessageType() MessageType { return MessageTypeAgentDeregisterRequest }
+func (*AgentDeregisterRequest) Direction() Direction     { return Uplink }
 
 type AgentDeregisterAccept struct {
 	messageMarker
 	Header
 }
 
-func (*AgentDeregisterAccept) MessageType() MessageType {
-	return MessageTypeAgentDeregisterAccept
-}
-func (*AgentDeregisterAccept) Direction() Direction { return Downlink }
+func (*AgentDeregisterAccept) MessageType() MessageType { return MessageTypeAgentDeregisterAccept }
+func (*AgentDeregisterAccept) Direction() Direction     { return Downlink }
 
 type DeregisterRejectCause uint8
 
 const (
-	DeregisterRejectUnknownAgentID   DeregisterRejectCause = 0x01
-	DeregisterRejectAgentNotBound    DeregisterRejectCause = 0x02
-	DeregisterRejectNotAuthorized    DeregisterRejectCause = 0x03
-	DeregisterRejectInvalidSignature DeregisterRejectCause = 0x04
-	DeregisterRejectInvalidTimestamp DeregisterRejectCause = 0x05
-	DeregisterRejectBackendFailure   DeregisterRejectCause = 0x06
+	DeregisterRejectAgentNotFound DeregisterRejectCause = iota + 1
+	DeregisterRejectSignatureInvalid
+	DeregisterRejectRequestValidationFailed
+	DeregisterRejectNotAuthorized
+	DeregisterRejectInternalError
 )
 
 type DeregisterFailedField uint8
 
 const (
-	DeregisterFieldUnspecified    DeregisterFailedField = 0x00
-	DeregisterFieldAgentID        DeregisterFailedField = 0x01
-	DeregisterFieldReason         DeregisterFailedField = 0x02
-	DeregisterFieldTimestamp      DeregisterFailedField = 0x03
-	DeregisterFieldSignature      DeregisterFailedField = 0x04
-	DeregisterFieldUEAgentBinding DeregisterFailedField = 0x05
+	DeregisterFieldUnspecified DeregisterFailedField = iota
+	DeregisterFieldAgentID
+	DeregisterFieldReason
+	DeregisterFieldTimestamp
+	DeregisterFieldSignature
 )
 
 type AgentDeregisterReject struct {
@@ -267,21 +260,75 @@ type AgentDeregisterReject struct {
 	FailedField DeregisterFailedField
 }
 
-func (*AgentDeregisterReject) MessageType() MessageType {
-	return MessageTypeAgentDeregisterReject
+func (*AgentDeregisterReject) MessageType() MessageType { return MessageTypeAgentDeregisterReject }
+func (*AgentDeregisterReject) Direction() Direction     { return Downlink }
+
+type NetworkAbilityRejectCause uint8
+
+const (
+	NetworkAbilityRejectAgentInvalid NetworkAbilityRejectCause = iota + 1
+	NetworkAbilityRejectProofInvalid
+	NetworkAbilityRejectRequestValidationFailed
+	NetworkAbilityRejectNotAuthorized
+	NetworkAbilityRejectInternalError
+)
+
+type NetworkAbilityFailedField uint8
+
+const (
+	NetworkAbilityFieldUnspecified NetworkAbilityFailedField = iota
+	NetworkAbilityFieldAgentID
+	NetworkAbilityFieldTimestamp
+	NetworkAbilityFieldProof
+)
+
+type AgentNetworkAbilityRequest struct {
+	messageMarker
+	Header
+	AgentID   string
+	Timestamp uint64
+	Proof     json.RawMessage
 }
-func (*AgentDeregisterReject) Direction() Direction { return Downlink }
+
+func (*AgentNetworkAbilityRequest) MessageType() MessageType {
+	return MessageTypeAgentNetworkAbilityRequest
+}
+func (*AgentNetworkAbilityRequest) Direction() Direction { return Uplink }
+
+type AgentNetworkAbilityResponse struct {
+	messageMarker
+	Header
+	Timestamp uint64
+	VC1       json.RawMessage
+}
+
+func (*AgentNetworkAbilityResponse) MessageType() MessageType {
+	return MessageTypeAgentNetworkAbilityResponse
+}
+func (*AgentNetworkAbilityResponse) Direction() Direction { return Downlink }
+
+type AgentNetworkAbilityReject struct {
+	messageMarker
+	Header
+	Cause       NetworkAbilityRejectCause
+	FailedField NetworkAbilityFailedField
+}
+
+func (*AgentNetworkAbilityReject) MessageType() MessageType {
+	return MessageTypeAgentNetworkAbilityReject
+}
+func (*AgentNetworkAbilityReject) Direction() Direction { return Downlink }
 
 type Priority uint8
 
 const (
-	PriorityUnspecified Priority = 0x00
-	PriorityHigh        Priority = 0x01
-	PriorityNormal      Priority = 0x02
-	PriorityLow         Priority = 0x03
+	PriorityUnspecified Priority = iota
+	PriorityHigh
+	PriorityNormal
+	PriorityLow
 )
 
-type AgentProfileUpdateRequest struct {
+type AgentPublishRequest struct {
 	messageMarker
 	Header
 	AgentID   string
@@ -289,6 +336,59 @@ type AgentProfileUpdateRequest struct {
 	Timestamp uint64
 	Signature []byte
 	VCList    json.RawMessage
+}
+
+func (*AgentPublishRequest) MessageType() MessageType { return MessageTypeAgentPublishRequest }
+func (*AgentPublishRequest) Direction() Direction     { return Uplink }
+
+type AgentPublishAccept struct {
+	messageMarker
+	Header
+}
+
+func (*AgentPublishAccept) MessageType() MessageType { return MessageTypeAgentPublishAccept }
+func (*AgentPublishAccept) Direction() Direction     { return Downlink }
+
+type PublishRejectCause uint8
+
+const (
+	PublishRejectAgentInvalid PublishRejectCause = iota + 1
+	PublishRejectVCInvalid
+	PublishRejectSignatureInvalid
+	PublishRejectRequestValidationFailed
+	PublishRejectInternalError
+)
+
+type PublishFailedField uint8
+
+const (
+	PublishFieldUnspecified PublishFailedField = iota
+	PublishFieldAgentID
+	PublishFieldPriority
+	PublishFieldTimestamp
+	PublishFieldSignature
+	PublishFieldVCList
+)
+
+type AgentPublishReject struct {
+	messageMarker
+	Header
+	Cause       PublishRejectCause
+	FailedField PublishFailedField
+}
+
+func (*AgentPublishReject) MessageType() MessageType { return MessageTypeAgentPublishReject }
+func (*AgentPublishReject) Direction() Direction     { return Downlink }
+
+type AgentProfileUpdateRequest struct {
+	messageMarker
+	Header
+	RequestID   string
+	AgentID     string
+	UpdateItems json.RawMessage
+	Credentials json.RawMessage
+	Timestamp   uint64
+	Proof       json.RawMessage
 }
 
 func (*AgentProfileUpdateRequest) MessageType() MessageType {
@@ -309,24 +409,24 @@ func (*AgentProfileUpdateAccept) Direction() Direction { return Downlink }
 type ProfileUpdateRejectCause uint8
 
 const (
-	ProfileUpdateRejectInvalidAgentID   ProfileUpdateRejectCause = 0x01
-	ProfileUpdateRejectNotAuthorized    ProfileUpdateRejectCause = 0x02
-	ProfileUpdateRejectInvalidPriority  ProfileUpdateRejectCause = 0x03
-	ProfileUpdateRejectInvalidVCList    ProfileUpdateRejectCause = 0x04
-	ProfileUpdateRejectInvalidSignature ProfileUpdateRejectCause = 0x05
-	ProfileUpdateRejectInvalidTimestamp ProfileUpdateRejectCause = 0x06
-	ProfileUpdateRejectInternalError    ProfileUpdateRejectCause = 0x07
+	ProfileUpdateRejectAgentInvalid ProfileUpdateRejectCause = iota + 1
+	ProfileUpdateRejectUpdateItemInvalid
+	ProfileUpdateRejectCredentialInvalid
+	ProfileUpdateRejectProofInvalid
+	ProfileUpdateRejectRequestValidationFailed
+	ProfileUpdateRejectInternalError
 )
 
 type ProfileUpdateFailedField uint8
 
 const (
-	ProfileUpdateFieldUnspecified ProfileUpdateFailedField = 0x00
-	ProfileUpdateFieldAgentID     ProfileUpdateFailedField = 0x01
-	ProfileUpdateFieldPriority    ProfileUpdateFailedField = 0x02
-	ProfileUpdateFieldTimestamp   ProfileUpdateFailedField = 0x03
-	ProfileUpdateFieldSignature   ProfileUpdateFailedField = 0x04
-	ProfileUpdateFieldVCList      ProfileUpdateFailedField = 0x05
+	ProfileUpdateFieldUnspecified ProfileUpdateFailedField = iota
+	ProfileUpdateFieldRequestID
+	ProfileUpdateFieldAgentID
+	ProfileUpdateFieldUpdateItems
+	ProfileUpdateFieldCredentials
+	ProfileUpdateFieldTimestamp
+	ProfileUpdateFieldProof
 )
 
 type AgentProfileUpdateReject struct {
@@ -341,81 +441,41 @@ func (*AgentProfileUpdateReject) MessageType() MessageType {
 }
 func (*AgentProfileUpdateReject) Direction() Direction { return Downlink }
 
-type SearchType uint8
+type DiscoveryScope uint8
 
 const (
-	SearchTypeCapabilityDiscovery SearchType = 0x01
-	SearchTypeAgentInfo           SearchType = 0x02
-	SearchTypeOwnerAgents         SearchType = 0x03
+	DiscoveryScopeIntraPLMN DiscoveryScope = iota + 1
+	DiscoveryScopeInterPLMN
 )
-
-type searchQueryMarker struct{}
-
-func (searchQueryMarker) isSearchQuery() {}
-
-type SearchQuery interface {
-	SearchType() SearchType
-	isSearchQuery()
-}
-
-type CapabilityDiscoveryQuery struct {
-	searchQueryMarker
-	SourceAgentID        string
-	TaskID               string
-	Timestamp            uint64
-	RequiredCapabilities []string
-}
-
-func (*CapabilityDiscoveryQuery) SearchType() SearchType {
-	return SearchTypeCapabilityDiscovery
-}
-
-type AgentInfoQuery struct {
-	searchQueryMarker
-	TargetAgentID string
-}
-
-func (*AgentInfoQuery) SearchType() SearchType { return SearchTypeAgentInfo }
-
-type OwnerAgentsQuery struct {
-	searchQueryMarker
-	OwnerID string
-}
-
-func (*OwnerAgentsQuery) SearchType() SearchType { return SearchTypeOwnerAgents }
 
 type AgentSearchRequest struct {
 	messageMarker
 	Header
-	Query SearchQuery
+	TaskID          string
+	AgentID         string
+	TaskDescription string
+	RequiredSkills  []string
+	DiscoveryScope  DiscoveryScope
+	MaxResults      uint8
+	Timestamp       uint64
+	Proof           json.RawMessage
 }
 
 func (*AgentSearchRequest) MessageType() MessageType { return MessageTypeAgentSearchRequest }
 func (*AgentSearchRequest) Direction() Direction     { return Uplink }
 
-type AgentStatus uint8
-
-const (
-	AgentStatusUnknown AgentStatus = 0x00
-	AgentStatusOffline AgentStatus = 0x01
-	AgentStatusOnline  AgentStatus = 0x02
-	AgentStatusBusy    AgentStatus = 0x03
-)
-
-type AgentRecord struct {
-	AgentID      string
-	AgentName    *string
-	Description  *string
-	Status       *AgentStatus
-	Priority     *Priority
-	Capabilities []string
+type SearchResult struct {
+	AgentCard json.RawMessage
+	Priority  Priority
 }
 
 type AgentSearchResponse struct {
 	messageMarker
 	Header
-	SearchType SearchType
-	Records    []AgentRecord
+	TaskID          string
+	TaskDescription string
+	Results         []SearchResult
+	Timestamp       uint64
 }
 
 func (*AgentSearchResponse) MessageType() MessageType { return MessageTypeAgentSearchResponse }
@@ -424,24 +484,26 @@ func (*AgentSearchResponse) Direction() Direction     { return Downlink }
 type SearchRejectCause uint8
 
 const (
-	SearchRejectInvalidSearchType SearchRejectCause = 0x01
-	SearchRejectInvalidMandatory  SearchRejectCause = 0x02
-	SearchRejectNotAuthorized     SearchRejectCause = 0x03
-	SearchRejectInvalidSource     SearchRejectCause = 0x04
-	SearchRejectInvalidTarget     SearchRejectCause = 0x05
-	SearchRejectInternalError     SearchRejectCause = 0x06
+	SearchRejectAgentInvalid SearchRejectCause = iota + 1
+	SearchRejectSkillInvalid
+	SearchRejectScopeInvalid
+	SearchRejectProofInvalid
+	SearchRejectRequestValidationFailed
+	SearchRejectInternalError
 )
 
 type SearchFailedField uint8
 
 const (
-	SearchFieldUnspecified        SearchFailedField = 0x00
-	SearchFieldSourceAgentID      SearchFailedField = 0x01
-	SearchFieldTaskID             SearchFailedField = 0x02
-	SearchFieldTargetAgentID      SearchFailedField = 0x03
-	SearchFieldOwnerID            SearchFailedField = 0x04
-	SearchFieldRequiredCapability SearchFailedField = 0x05
-	SearchFieldTimestamp          SearchFailedField = 0x06
+	SearchFieldUnspecified SearchFailedField = iota
+	SearchFieldTaskID
+	SearchFieldAgentID
+	SearchFieldTaskDescription
+	SearchFieldRequiredSkills
+	SearchFieldDiscoveryScope
+	SearchFieldMaxResults
+	SearchFieldTimestamp
+	SearchFieldProof
 )
 
 type AgentSearchReject struct {
@@ -454,15 +516,67 @@ type AgentSearchReject struct {
 func (*AgentSearchReject) MessageType() MessageType { return MessageTypeAgentSearchReject }
 func (*AgentSearchReject) Direction() Direction     { return Downlink }
 
+type AgentGroupingRequest struct {
+	messageMarker
+	Header
+	AgentID        string
+	TargetAgentIDs []string
+	GroupConfig    json.RawMessage
+	Timestamp      uint64
+	Proof          json.RawMessage
+}
+
+func (*AgentGroupingRequest) MessageType() MessageType { return MessageTypeAgentGroupingRequest }
+func (*AgentGroupingRequest) Direction() Direction     { return Uplink }
+
+type AgentGroupingAccept struct {
+	messageMarker
+	Header
+	GroupID string
+}
+
+func (*AgentGroupingAccept) MessageType() MessageType { return MessageTypeAgentGroupingAccept }
+func (*AgentGroupingAccept) Direction() Direction     { return Downlink }
+
+type GroupingRejectCause uint8
+
+const (
+	GroupingRejectSourceAgentInvalid GroupingRejectCause = iota + 1
+	GroupingRejectTargetAgentInvalid
+	GroupingRejectTargetAgentRejected
+	GroupingRejectTargetAgentTimeout
+	GroupingRejectRequestValidationFailed
+	GroupingRejectProofInvalid
+	GroupingRejectInternalError
+)
+
+type GroupingFailedField uint8
+
+const (
+	GroupingFieldUnspecified GroupingFailedField = iota
+	GroupingFieldSourceAgentID
+	GroupingFieldTargetAgents
+	GroupingFieldGroupConfig
+	GroupingFieldTimestamp
+	GroupingFieldProof
+)
+
+type AgentGroupingReject struct {
+	messageMarker
+	Header
+	Cause          GroupingRejectCause
+	FailedField    GroupingFailedField
+	RelatedAgentID string
+}
+
+func (*AgentGroupingReject) MessageType() MessageType { return MessageTypeAgentGroupingReject }
+func (*AgentGroupingReject) Direction() Direction     { return Downlink }
+
 type AgentGroupingInvitation struct {
 	messageMarker
 	Header
-	GroupID       string
-	SourceAgentID string
-	TargetAgentID string
-	TaskID        string
-	ExpiresAt     uint64
-	Proof         []byte
+	GroupConfig        json.RawMessage
+	GroupAdministrator json.RawMessage
 }
 
 func (*AgentGroupingInvitation) MessageType() MessageType {
@@ -477,26 +591,10 @@ const (
 	GroupingDecisionReject
 )
 
-type GroupingRejectReason uint8
-
-const (
-	GroupingRejectReasonNone GroupingRejectReason = iota
-	GroupingRejectReasonUserReject
-	GroupingRejectReasonBusy
-	GroupingRejectReasonCapabilityUnavailable
-	GroupingRejectReasonSecurityFailure
-	GroupingRejectReasonLocalError
-)
-
 type AgentGroupingInvitationResponse struct {
 	messageMarker
 	Header
-	GroupID      string
-	AgentID      string
-	Decision     GroupingDecision
-	RejectReason GroupingRejectReason
-	Timestamp    uint64
-	Proof        []byte
+	Decision GroupingDecision
 }
 
 func (*AgentGroupingInvitationResponse) MessageType() MessageType {
@@ -507,9 +605,11 @@ func (*AgentGroupingInvitationResponse) Direction() Direction { return Uplink }
 type AgentGroupInfoNotification struct {
 	messageMarker
 	Header
-	GroupID       string
-	TargetAgentID string
-	GroupConfig   json.RawMessage
+	Version   string
+	Timestamp uint64
+	GroupID   string
+	Members   json.RawMessage
+	Proof     json.RawMessage
 }
 
 func (*AgentGroupInfoNotification) MessageType() MessageType {
@@ -517,30 +617,22 @@ func (*AgentGroupInfoNotification) MessageType() MessageType {
 }
 func (*AgentGroupInfoNotification) Direction() Direction { return Downlink }
 
-type GroupInfoApplyResult uint8
+type GroupInfoStatus uint8
 
 const (
-	GroupInfoApplyResultSuccess GroupInfoApplyResult = iota
-	GroupInfoApplyResultFailure
-)
-
-type GroupInfoFailureCause uint8
-
-const (
-	GroupInfoFailureCauseNone GroupInfoFailureCause = iota
-	GroupInfoFailureCauseConfigInvalid
-	GroupInfoFailureCauseProofInvalid
-	GroupInfoFailureCauseRelayInvalid
-	GroupInfoFailureCauseLocalApplyFailed
+	GroupInfoStatusAccepted GroupInfoStatus = iota
+	GroupInfoStatusRejected
 )
 
 type AgentGroupInfoNotificationResponse struct {
 	messageMarker
 	Header
-	GroupID      string
-	AgentID      string
-	Result       GroupInfoApplyResult
-	FailureCause GroupInfoFailureCause
+	GroupID   string
+	AgentID   string
+	Status    GroupInfoStatus
+	Detail    string
+	Timestamp uint64
+	Proof     json.RawMessage
 }
 
 func (*AgentGroupInfoNotificationResponse) MessageType() MessageType {
