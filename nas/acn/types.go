@@ -144,15 +144,13 @@ type Message interface {
 type AgentRegisterRequest struct {
 	messageMarker
 	Header
-	Owner           string
-	AgentName       string
-	PublicKey       []byte
-	Description     string
-	Timestamp       uint64
-	Signature       []byte
-	Region          string
-	OS              string
-	SoftwareVersion string
+	Owner       string
+	AgentName   string
+	PublicKey   []byte
+	Description string
+	Timestamp   uint64
+	Signature   []byte
+	Metadata    json.RawMessage
 }
 
 func (*AgentRegisterRequest) MessageType() MessageType { return MessageTypeAgentRegisterRequest }
@@ -192,9 +190,7 @@ const (
 	RegisterFieldDescription
 	RegisterFieldTimestamp
 	RegisterFieldSignature
-	RegisterFieldRegion
-	RegisterFieldOS
-	RegisterFieldSoftwareVersion
+	RegisterFieldMetadata
 )
 
 type AgentRegisterReject struct {

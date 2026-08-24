@@ -10,10 +10,10 @@ import (
 
 func TestCurrentMessagesRoundTrip(t *testing.T) {
 	header := acn.Header{TransactionID: 33}
-	proof := json.RawMessage(`{ "creator" : "did:a1#key-1", "signature_value":"sig" }`)
+	proof := json.RawMessage(`{ "type":"JsonWebSignature2020", "verification_method":"did:key:k1", "jws":"sig", "future":true }`)
 	groupConfig := json.RawMessage(`{ "group_name" : "task-patrol", "scope":"private", "max_members":5, "future":true }`)
 	messages := []acn.Message{
-		&acn.AgentRegisterRequest{Header: header, Owner: "u1", AgentName: "Alice", PublicKey: []byte{1, 2, 3}, Description: "Model-X", Timestamp: 1, Signature: []byte("sig"), Region: "CN", OS: "Linux", SoftwareVersion: "1.0.0"},
+		&acn.AgentRegisterRequest{Header: header, Owner: "u1", AgentName: "Alice", PublicKey: []byte{1, 2, 3}, Description: "Model-X", Timestamp: 1, Signature: []byte("sig"), Metadata: json.RawMessage(`{ "region":"CN", "os":"Linux", "version":"1.0.0", "future":true }`)},
 		&acn.AgentRegisterAccept{Header: header, AgentID: "a1", VC0: json.RawMessage(`{"id":"vc0"}`)},
 		&acn.AgentRegisterReject{Header: header, Cause: acn.RegisterRejectSignatureInvalid, FailedField: acn.RegisterFieldSignature},
 		&acn.AgentDeregisterRequest{Header: header, AgentID: "a1", Reason: acn.DeregistrationReasonRetired, Timestamp: 2, Proof: proof},
@@ -34,7 +34,7 @@ func TestCurrentMessagesRoundTrip(t *testing.T) {
 		&acn.AgentGroupingRequest{Header: header, AgentID: "a1", TargetAgentIDs: []string{"a2", "a3"}, GroupConfig: groupConfig, Timestamp: 9, Proof: proof},
 		&acn.AgentGroupingAccept{Header: header, GroupID: "g1"},
 		&acn.AgentGroupingReject{Header: header, Cause: acn.GroupingRejectTargetAgentRejected, FailedField: acn.GroupingFieldTargetAgents, RelatedAgentID: "a2"},
-		&acn.AgentGroupingInvitation{Header: header, GroupConfig: json.RawMessage(`{"group_id":"g1"}`), GroupAdministrator: json.RawMessage(`{ "agent_id":"a1", "future":true }`)},
+		&acn.AgentGroupingInvitation{Header: header, GroupConfig: groupConfig, GroupAdministrator: json.RawMessage(`{ "display_name":"Alice", "future":true }`)},
 		&acn.AgentGroupingInvitationResponse{Header: header, Decision: acn.GroupingDecisionAccept},
 		&acn.AgentGroupInfoNotification{Header: header, GroupID: "g1", Members: json.RawMessage(`{"agent1":{"agent_id":"a1"}}`)},
 		&acn.AgentGroupInfoNotificationResponse{Header: header, GroupID: "g1", AgentID: "a1", Status: acn.GroupInfoStatusAccepted, Detail: "connected", Timestamp: 11, Proof: proof},

@@ -7,41 +7,35 @@ import (
 
 // Limits bounds allocations and field sizes accepted by a Codec.
 type Limits struct {
-	MaxACNPayload      int
-	MaxAgentID         int
-	MaxGroupID         int
-	MaxOwnerID         int
-	MaxOperationID     int
-	MaxIntent          int
-	MaxAgentName       int
-	MaxDescription     int
-	MaxCapability      int
-	MaxPublicKey       int
-	MaxSignature       int
-	MaxRegion          int
-	MaxOS              int
-	MaxSoftwareVersion int
-	MaxJSONContainer   int
+	MaxACNPayload    int
+	MaxAgentID       int
+	MaxGroupID       int
+	MaxOwnerID       int
+	MaxOperationID   int
+	MaxIntent        int
+	MaxAgentName     int
+	MaxDescription   int
+	MaxCapability    int
+	MaxPublicKey     int
+	MaxSignature     int
+	MaxJSONContainer int
 }
 
 // DefaultLimits returns the ACN version 1 default limits.
 func DefaultLimits() Limits {
 	return Limits{
-		MaxACNPayload:      math.MaxUint16,
-		MaxAgentID:         1024,
-		MaxGroupID:         1024,
-		MaxOwnerID:         128,
-		MaxOperationID:     1024,
-		MaxIntent:          256,
-		MaxAgentName:       128,
-		MaxDescription:     512,
-		MaxCapability:      math.MaxUint8,
-		MaxPublicKey:       8192,
-		MaxSignature:       8192,
-		MaxRegion:          64,
-		MaxOS:              128,
-		MaxSoftwareVersion: 64,
-		MaxJSONContainer:   math.MaxUint16,
+		MaxACNPayload:    math.MaxUint16,
+		MaxAgentID:       1024,
+		MaxGroupID:       1024,
+		MaxOwnerID:       128,
+		MaxOperationID:   1024,
+		MaxIntent:        256,
+		MaxAgentName:     128,
+		MaxDescription:   512,
+		MaxCapability:    math.MaxUint8,
+		MaxPublicKey:     8192,
+		MaxSignature:     8192,
+		MaxJSONContainer: math.MaxUint16,
 	}
 }
 
@@ -50,19 +44,16 @@ func (l Limits) validate() error {
 		return err
 	}
 	for name, value := range map[string]int{
-		"MaxAgentID":         l.MaxAgentID,
-		"MaxGroupID":         l.MaxGroupID,
-		"MaxOwnerID":         l.MaxOwnerID,
-		"MaxOperationID":     l.MaxOperationID,
-		"MaxIntent":          l.MaxIntent,
-		"MaxAgentName":       l.MaxAgentName,
-		"MaxDescription":     l.MaxDescription,
-		"MaxPublicKey":       l.MaxPublicKey,
-		"MaxSignature":       l.MaxSignature,
-		"MaxRegion":          l.MaxRegion,
-		"MaxOS":              l.MaxOS,
-		"MaxSoftwareVersion": l.MaxSoftwareVersion,
-		"MaxJSONContainer":   l.MaxJSONContainer,
+		"MaxAgentID":       l.MaxAgentID,
+		"MaxGroupID":       l.MaxGroupID,
+		"MaxOwnerID":       l.MaxOwnerID,
+		"MaxOperationID":   l.MaxOperationID,
+		"MaxIntent":        l.MaxIntent,
+		"MaxAgentName":     l.MaxAgentName,
+		"MaxDescription":   l.MaxDescription,
+		"MaxPublicKey":     l.MaxPublicKey,
+		"MaxSignature":     l.MaxSignature,
+		"MaxJSONContainer": l.MaxJSONContainer,
 	} {
 		if err := validateLimit(name, value, 1, math.MaxUint16); err != nil {
 			return err

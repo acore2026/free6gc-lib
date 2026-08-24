@@ -1,9 +1,6 @@
 package acn
 
-import (
-	"encoding/json"
-	"math"
-)
+import "math"
 
 func (c *Codec) encodeAgentGroupingRequest(output *encoder, message *AgentGroupingRequest) error {
 	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
@@ -126,13 +123,7 @@ func (c *Codec) encodeAgentGroupingInvitation(output *encoder, message *AgentGro
 	if err := validateJSONObject(message.GroupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if err := validateJSONStringField(message.GroupConfig, "group_config", "group_id"); err != nil {
-		return err
-	}
 	if err := validateJSONObject(message.GroupAdministrator, "group_administrator", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-	if err := validateJSONStringField(message.GroupAdministrator, "group_administrator", "agent_id"); err != nil {
 		return err
 	}
 	output.lve(message.GroupConfig)
@@ -148,17 +139,11 @@ func (c *Codec) decodeAgentGroupingInvitation(input *decoder, header Header) (Me
 	if err := validateJSONObject(groupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	if err := validateJSONStringField(groupConfig, "group_config", "group_id"); err != nil {
-		return nil, err
-	}
 	groupAdministrator, err := input.lveBytes("group_administrator", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
 	if err := validateJSONObject(groupAdministrator, "group_administrator", c.limits.MaxJSONContainer); err != nil {
-		return nil, err
-	}
-	if err := validateJSONStringField(groupAdministrator, "group_administrator", "agent_id"); err != nil {
 		return nil, err
 	}
 	return &AgentGroupingInvitation{
@@ -267,20 +252,4 @@ func (c *Codec) decodeAgentGroupInfoNotificationResponse(input *decoder, header 
 		return nil, err
 	}
 	return message, nil
-}
-
-func validateJSONStringField(value json.RawMessage, objectField, member string) error {
-	var object map[string]json.RawMessage
-	if err := json.Unmarshal(value, &object); err != nil {
-		return newProtocolError(ErrorCodeInvalidJSON, objectField, -1, ErrInvalidJSON)
-	}
-	encoded, ok := object[member]
-	if !ok {
-		return newProtocolError(ErrorCodeInvalidJSON, objectField+"."+member, -1, ErrInvalidJSON)
-	}
-	var decoded string
-	if err := json.Unmarshal(encoded, &decoded); err != nil || decoded == "" {
-		return newProtocolError(ErrorCodeInvalidJSON, objectField+"."+member, -1, ErrInvalidJSON)
-	}
-	return nil
 }
