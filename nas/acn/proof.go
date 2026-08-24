@@ -22,5 +22,9 @@ func (c *Codec) decodeProof(input *decoder, field string) (json.RawMessage, erro
 }
 
 func validateProof(proof json.RawMessage, field string, maximum int) error {
+	// The codec owns binary framing and JSON-container integrity. Proof-suite
+	// fields and signatures are validated by the destination that owns the
+	// trusted verification key; enforcing one suite here would reject valid ACN
+	// JsonWebSignature2020 messages before IDM or ACF can authenticate them.
 	return validateJSONObject(proof, field, maximum)
 }

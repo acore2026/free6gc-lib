@@ -81,3 +81,22 @@ func TestCurrentMessageAssignments(t *testing.T) {
 		t.Fatalf("network ability message name = %q", got)
 	}
 }
+
+func TestCodecCarriesCompleteMessageProofUnchanged(t *testing.T) {
+	request := json.RawMessage(`{"agent_id":"agent-1","intent":"Issue Network Ability Credential","timestamp":"2026-08-24T12:00:00.000Z","proof":{"type":"JsonWebSignature2020","verification_method":"did:key:test#test","proof_purpose":"authentication","created":"2026-08-24T12:00:00.000Z","jws":"protected..signature"}}`)
+	message := &acn.AgentNetworkAbilityRequest{
+		Header: acn.Header{TransactionID: 7}, NetworkAbilityRequest: request,
+	}
+	wire, err := acn.Marshal(message)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := acn.Unmarshal(acn.Uplink, wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := decoded.(*acn.AgentNetworkAbilityRequest)
+	if string(got.NetworkAbilityRequest) != string(request) {
+		t.Fatalf("network ability request = %s, want exact %s", got.NetworkAbilityRequest, request)
+	}
+}
