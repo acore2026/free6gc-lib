@@ -211,6 +211,14 @@ func validateJSONObject(value json.RawMessage, field string, maximum int) error 
 }
 
 func validateJSONArray(value json.RawMessage, field string, maximum int) error {
+	return validateJSONArrayLength(value, field, maximum, false)
+}
+
+func validateJSONArrayAllowEmpty(value json.RawMessage, field string, maximum int) error {
+	return validateJSONArrayLength(value, field, maximum, true)
+}
+
+func validateJSONArrayLength(value json.RawMessage, field string, maximum int, allowEmpty bool) error {
 	if err := validateBytes(value, field, maximum); err != nil {
 		return err
 	}
@@ -221,7 +229,7 @@ func validateJSONArray(value json.RawMessage, field string, maximum int) error {
 		return newProtocolError(ErrorCodeInvalidJSON, field, -1, ErrInvalidJSON)
 	}
 	var array []json.RawMessage
-	if err := json.Unmarshal(value, &array); err != nil || array == nil || len(array) == 0 {
+	if err := json.Unmarshal(value, &array); err != nil || array == nil || (!allowEmpty && len(array) == 0) {
 		return newProtocolError(ErrorCodeInvalidJSON, field, -1, ErrInvalidJSON)
 	}
 	return nil
@@ -301,8 +309,8 @@ func (c *Codec) Marshal(message Message) ([]byte, error) {
 		err = encodeAgentDeregisterReject(output, typed)
 	case *AgentNetworkAbilityRequest:
 		err = c.encodeAgentNetworkAbilityRequest(output, typed)
-	case *AgentNetworkAbilityResponse:
-		err = c.encodeAgentNetworkAbilityResponse(output, typed)
+	case *AgentNetworkAbilityAccept:
+		err = c.encodeAgentNetworkAbilityAccept(output, typed)
 	case *AgentNetworkAbilityReject:
 		err = encodeAgentNetworkAbilityReject(output, typed)
 	case *AgentPublishRequest:
@@ -313,6 +321,7 @@ func (c *Codec) Marshal(message Message) ([]byte, error) {
 	case *AgentProfileUpdateRequest:
 		err = c.encodeAgentProfileUpdateRequest(output, typed)
 	case *AgentProfileUpdateAccept:
+		err = c.encodeAgentProfileUpdateAccept(output, typed)
 	case *AgentProfileUpdateReject:
 		err = encodeAgentProfileUpdateReject(output, typed)
 	case *AgentSearchRequest:
@@ -439,8 +448,8 @@ func (c *Codec) Unmarshal(direction Direction, payload []byte) (Message, error) 
 		message, err = decodeAgentDeregisterReject(input, header)
 	case MessageTypeAgentNetworkAbilityRequest:
 		message, err = c.decodeAgentNetworkAbilityRequest(input, header)
-	case MessageTypeAgentNetworkAbilityResponse:
-		message, err = c.decodeAgentNetworkAbilityResponse(input, header)
+	case MessageTypeAgentNetworkAbilityAccept:
+		message, err = c.decodeAgentNetworkAbilityAccept(input, header)
 	case MessageTypeAgentNetworkAbilityReject:
 		message, err = decodeAgentNetworkAbilityReject(input, header)
 	case MessageTypeAgentPublishRequest:
@@ -452,7 +461,7 @@ func (c *Codec) Unmarshal(direction Direction, payload []byte) (Message, error) 
 	case MessageTypeAgentProfileUpdateRequest:
 		message, err = c.decodeAgentProfileUpdateRequest(input, header)
 	case MessageTypeAgentProfileUpdateAccept:
-		message = &AgentProfileUpdateAccept{Header: header}
+		message, err = c.decodeAgentProfileUpdateAccept(input, header)
 	case MessageTypeAgentProfileUpdateReject:
 		message, err = decodeAgentProfileUpdateReject(input, header)
 	case MessageTypeAgentSearchRequest:

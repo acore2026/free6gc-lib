@@ -6,18 +6,8 @@ import (
 )
 
 func (c *Codec) encodeAgentSearchRequest(output *encoder, message *AgentSearchRequest) error {
-	for _, field := range []struct {
-		value   string
-		name    string
-		maximum int
-	}{
-		{message.TaskID, "task_id", c.limits.MaxTaskID},
-		{message.AgentID, "agent_id", c.limits.MaxAgentID},
-		{message.TaskDescription, "task_description", c.limits.MaxDescription},
-	} {
-		if err := validateString(field.value, field.name, field.maximum); err != nil {
-			return err
-		}
+	if err := validateString(message.RequesterAgentID, "requester_agent_id", c.limits.MaxAgentID); err != nil {
+		return err
 	}
 	if len(message.RequiredSkills) < 1 || len(message.RequiredSkills) > math.MaxUint8 {
 		return newProtocolError(ErrorCodeInvalidLength, "required_skills", -1, ErrInvalidLength)
@@ -25,12 +15,10 @@ func (c *Codec) encodeAgentSearchRequest(output *encoder, message *AgentSearchRe
 	if message.DiscoveryScope != DiscoveryScopeIntraPLMN && message.DiscoveryScope != DiscoveryScopeInterPLMN {
 		return newProtocolError(ErrorCodeInvalidValue, "discovery_scope", -1, ErrInvalidValue)
 	}
-	if message.MaxResults == 0 {
+	if message.MaxResults == 0 || message.MaxResults > 100 {
 		return newProtocolError(ErrorCodeInvalidValue, "max_results", -1, ErrInvalidValue)
 	}
-	output.lve([]byte(message.TaskID))
-	output.lve([]byte(message.AgentID))
-	output.lve([]byte(message.TaskDescription))
+	output.lve([]byte(message.RequesterAgentID))
 	output.uint8(uint8(len(message.RequiredSkills)))
 	for _, skill := range message.RequiredSkills {
 		if err := validateString(skill, "required_skill", c.limits.MaxCapability); err != nil {
@@ -47,13 +35,7 @@ func (c *Codec) encodeAgentSearchRequest(output *encoder, message *AgentSearchRe
 func (c *Codec) decodeAgentSearchRequest(input *decoder, header Header) (Message, error) {
 	message := &AgentSearchRequest{Header: header}
 	var err error
-	if message.TaskID, err = input.lveString("task_id", c.limits.MaxTaskID); err != nil {
-		return nil, err
-	}
-	if message.AgentID, err = input.lveString("agent_id", c.limits.MaxAgentID); err != nil {
-		return nil, err
-	}
-	if message.TaskDescription, err = input.lveString("task_description", c.limits.MaxDescription); err != nil {
+	if message.RequesterAgentID, err = input.lveString("requester_agent_id", c.limits.MaxAgentID); err != nil {
 		return nil, err
 	}
 	count, err := input.uint8("required_skill_count")
@@ -82,7 +64,7 @@ func (c *Codec) decodeAgentSearchRequest(input *decoder, header Header) (Message
 	if message.MaxResults, err = input.uint8("max_results"); err != nil {
 		return nil, err
 	}
-	if message.MaxResults == 0 {
+	if message.MaxResults == 0 || message.MaxResults > 100 {
 		return nil, newProtocolError(ErrorCodeInvalidValue, "max_results", input.offset-1, ErrInvalidValue)
 	}
 	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
@@ -95,17 +77,9 @@ func (c *Codec) decodeAgentSearchRequest(input *decoder, header Header) (Message
 }
 
 func (c *Codec) encodeAgentSearchResponse(output *encoder, message *AgentSearchResponse) error {
-	if err := validateString(message.TaskID, "task_id", c.limits.MaxTaskID); err != nil {
-		return err
-	}
-	if err := validateString(message.TaskDescription, "task_description", c.limits.MaxDescription); err != nil {
-		return err
-	}
 	if len(message.Results) > math.MaxUint8 {
 		return newProtocolError(ErrorCodeInvalidLength, "results", -1, ErrInvalidLength)
 	}
-	output.lve([]byte(message.TaskID))
-	output.lve([]byte(message.TaskDescription))
 	output.uint8(uint8(len(message.Results)))
 	for _, result := range message.Results {
 		record, err := c.encodeSearchResult(result)
@@ -138,12 +112,6 @@ func (c *Codec) encodeSearchResult(result SearchResult) ([]byte, error) {
 func (c *Codec) decodeAgentSearchResponse(input *decoder, header Header) (Message, error) {
 	message := &AgentSearchResponse{Header: header}
 	var err error
-	if message.TaskID, err = input.lveString("task_id", c.limits.MaxTaskID); err != nil {
-		return nil, err
-	}
-	if message.TaskDescription, err = input.lveString("task_description", c.limits.MaxDescription); err != nil {
-		return nil, err
-	}
 	count, err := input.uint8("result_count")
 	if err != nil {
 		return nil, err

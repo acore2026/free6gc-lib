@@ -11,7 +11,8 @@ type Limits struct {
 	MaxAgentID         int
 	MaxGroupID         int
 	MaxOwnerID         int
-	MaxTaskID          int
+	MaxOperationID     int
+	MaxIntent          int
 	MaxAgentName       int
 	MaxDescription     int
 	MaxCapability      int
@@ -29,10 +30,11 @@ func DefaultLimits() Limits {
 		MaxACNPayload:      math.MaxUint16,
 		MaxAgentID:         1024,
 		MaxGroupID:         1024,
-		MaxOwnerID:         1024,
-		MaxTaskID:          1024,
-		MaxAgentName:       255,
-		MaxDescription:     2048,
+		MaxOwnerID:         128,
+		MaxOperationID:     1024,
+		MaxIntent:          256,
+		MaxAgentName:       128,
+		MaxDescription:     512,
 		MaxCapability:      math.MaxUint8,
 		MaxPublicKey:       8192,
 		MaxSignature:       8192,
@@ -51,7 +53,8 @@ func (l Limits) validate() error {
 		"MaxAgentID":         l.MaxAgentID,
 		"MaxGroupID":         l.MaxGroupID,
 		"MaxOwnerID":         l.MaxOwnerID,
-		"MaxTaskID":          l.MaxTaskID,
+		"MaxOperationID":     l.MaxOperationID,
+		"MaxIntent":          l.MaxIntent,
 		"MaxAgentName":       l.MaxAgentName,
 		"MaxDescription":     l.MaxDescription,
 		"MaxPublicKey":       l.MaxPublicKey,

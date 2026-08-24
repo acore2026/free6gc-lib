@@ -10,14 +10,10 @@ func (c *Codec) encodeAgentDeregisterRequest(
 	if !validDeregistrationReason(message.Reason) {
 		return newProtocolError(ErrorCodeInvalidValue, "reason", -1, ErrInvalidValue)
 	}
-	if err := validateBytes(message.Signature, "signature", c.limits.MaxSignature); err != nil {
-		return err
-	}
 	output.lve([]byte(message.AgentID))
 	output.uint8(uint8(message.Reason))
 	output.uint64(message.Timestamp)
-	output.lve(message.Signature)
-	return nil
+	return c.encodeProof(output, message.Proof, "proof")
 }
 
 func (c *Codec) decodeAgentDeregisterRequest(
@@ -40,11 +36,9 @@ func (c *Codec) decodeAgentDeregisterRequest(
 	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
 		return nil, err
 	}
-	signature, err := input.lveBytes("signature", c.limits.MaxSignature)
-	if err != nil {
+	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
 		return nil, err
 	}
-	message.Signature = cloneBytes(signature)
 	return message, nil
 }
 
@@ -91,5 +85,5 @@ func validDeregisterRejectCause(value DeregisterRejectCause) bool {
 }
 
 func validDeregisterFailedField(value DeregisterFailedField) bool {
-	return value >= DeregisterFieldUnspecified && value <= DeregisterFieldSignature
+	return value >= DeregisterFieldUnspecified && value <= DeregisterFieldProof
 }

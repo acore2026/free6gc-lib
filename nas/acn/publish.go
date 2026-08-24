@@ -7,16 +7,15 @@ func (c *Codec) encodeAgentPublishRequest(output *encoder, message *AgentPublish
 	if !validPriority(message.Priority) {
 		return newProtocolError(ErrorCodeInvalidValue, "priority", -1, ErrInvalidValue)
 	}
-	if err := validateBytes(message.Signature, "signature", c.limits.MaxSignature); err != nil {
-		return err
-	}
 	if err := validateJSONArray(message.VCList, "vc_list", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
 	output.lve([]byte(message.AgentID))
 	output.uint8(uint8(message.Priority))
 	output.uint64(message.Timestamp)
-	output.lve(message.Signature)
+	if err := c.encodeProof(output, message.Proof, "proof"); err != nil {
+		return err
+	}
 	output.lve(message.VCList)
 	return nil
 }
@@ -38,11 +37,9 @@ func (c *Codec) decodeAgentPublishRequest(input *decoder, header Header) (Messag
 	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
 		return nil, err
 	}
-	signature, err := input.lveBytes("signature", c.limits.MaxSignature)
-	if err != nil {
+	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
 		return nil, err
 	}
-	message.Signature = cloneBytes(signature)
 	vcList, err := input.lveBytes("vc_list", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err

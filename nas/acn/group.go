@@ -1,6 +1,9 @@
 package acn
 
-import "math"
+import (
+	"encoding/json"
+	"math"
+)
 
 func (c *Codec) encodeAgentGroupingRequest(output *encoder, message *AgentGroupingRequest) error {
 	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
@@ -123,7 +126,13 @@ func (c *Codec) encodeAgentGroupingInvitation(output *encoder, message *AgentGro
 	if err := validateJSONObject(message.GroupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
+	if err := validateJSONStringField(message.GroupConfig, "group_config", "group_id"); err != nil {
+		return err
+	}
 	if err := validateJSONObject(message.GroupAdministrator, "group_administrator", c.limits.MaxJSONContainer); err != nil {
+		return err
+	}
+	if err := validateJSONStringField(message.GroupAdministrator, "group_administrator", "agent_id"); err != nil {
 		return err
 	}
 	output.lve(message.GroupConfig)
@@ -139,11 +148,17 @@ func (c *Codec) decodeAgentGroupingInvitation(input *decoder, header Header) (Me
 	if err := validateJSONObject(groupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
+	if err := validateJSONStringField(groupConfig, "group_config", "group_id"); err != nil {
+		return nil, err
+	}
 	groupAdministrator, err := input.lveBytes("group_administrator", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
 	if err := validateJSONObject(groupAdministrator, "group_administrator", c.limits.MaxJSONContainer); err != nil {
+		return nil, err
+	}
+	if err := validateJSONStringField(groupAdministrator, "group_administrator", "agent_id"); err != nil {
 		return nil, err
 	}
 	return &AgentGroupingInvitation{
@@ -174,31 +189,20 @@ func decodeAgentGroupingInvitationResponse(input *decoder, header Header) (Messa
 }
 
 func (c *Codec) encodeAgentGroupInfoNotification(output *encoder, message *AgentGroupInfoNotification) error {
-	if err := validateString(message.Version, "version", c.limits.MaxSoftwareVersion); err != nil {
-		return err
-	}
 	if err := validateString(message.GroupID, "group_id", c.limits.MaxGroupID); err != nil {
 		return err
 	}
 	if err := validateJSONObject(message.Members, "members", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	output.lve([]byte(message.Version))
-	output.uint64(message.Timestamp)
 	output.lve([]byte(message.GroupID))
 	output.lve(message.Members)
-	return c.encodeProof(output, message.Proof, "proof")
+	return nil
 }
 
 func (c *Codec) decodeAgentGroupInfoNotification(input *decoder, header Header) (Message, error) {
 	message := &AgentGroupInfoNotification{Header: header}
 	var err error
-	if message.Version, err = input.lveString("version", c.limits.MaxSoftwareVersion); err != nil {
-		return nil, err
-	}
-	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
-		return nil, err
-	}
 	if message.GroupID, err = input.lveString("group_id", c.limits.MaxGroupID); err != nil {
 		return nil, err
 	}
@@ -210,9 +214,6 @@ func (c *Codec) decodeAgentGroupInfoNotification(input *decoder, header Header) 
 		return nil, err
 	}
 	message.Members = cloneBytes(members)
-	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
-		return nil, err
-	}
 	return message, nil
 }
 
@@ -266,4 +267,20 @@ func (c *Codec) decodeAgentGroupInfoNotificationResponse(input *decoder, header 
 		return nil, err
 	}
 	return message, nil
+}
+
+func validateJSONStringField(value json.RawMessage, objectField, member string) error {
+	var object map[string]json.RawMessage
+	if err := json.Unmarshal(value, &object); err != nil {
+		return newProtocolError(ErrorCodeInvalidJSON, objectField, -1, ErrInvalidJSON)
+	}
+	encoded, ok := object[member]
+	if !ok {
+		return newProtocolError(ErrorCodeInvalidJSON, objectField+"."+member, -1, ErrInvalidJSON)
+	}
+	var decoded string
+	if err := json.Unmarshal(encoded, &decoded); err != nil || decoded == "" {
+		return newProtocolError(ErrorCodeInvalidJSON, objectField+"."+member, -1, ErrInvalidJSON)
+	}
+	return nil
 }

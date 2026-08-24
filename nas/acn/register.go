@@ -9,6 +9,9 @@ func (c *Codec) encodeAgentRegisterRequest(output *encoder, message *AgentRegist
 		{message.Owner, "owner", c.limits.MaxOwnerID},
 		{message.AgentName, "agent_name", c.limits.MaxAgentName},
 		{message.Description, "description", c.limits.MaxDescription},
+		{message.Region, "region", c.limits.MaxRegion},
+		{message.OS, "os", c.limits.MaxOS},
+		{message.SoftwareVersion, "software_version", c.limits.MaxSoftwareVersion},
 	} {
 		if err := validateString(field.value, field.name, field.maximum); err != nil {
 			return err
@@ -20,17 +23,15 @@ func (c *Codec) encodeAgentRegisterRequest(output *encoder, message *AgentRegist
 	if err := validateBytes(message.Signature, "signature", c.limits.MaxSignature); err != nil {
 		return err
 	}
-	if err := validateJSONObject(message.Metadata, "metadata", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-
 	output.lve([]byte(message.Owner))
 	output.lve([]byte(message.AgentName))
 	output.lve(message.PublicKey)
 	output.lve([]byte(message.Description))
 	output.uint64(message.Timestamp)
 	output.lve(message.Signature)
-	output.lve(message.Metadata)
+	output.lve([]byte(message.Region))
+	output.lve([]byte(message.OS))
+	output.lve([]byte(message.SoftwareVersion))
 	return nil
 }
 
@@ -65,14 +66,18 @@ func (c *Codec) decodeAgentRegisterRequest(
 		return nil, err
 	}
 	message.Signature = cloneBytes(signature)
-	metadata, err := input.lveBytes("metadata", c.limits.MaxJSONContainer)
-	if err != nil {
+	if message.Region, err = input.lveString("region", c.limits.MaxRegion); err != nil {
 		return nil, err
 	}
-	if err := validateJSONObject(metadata, "metadata", c.limits.MaxJSONContainer); err != nil {
+	if message.OS, err = input.lveString("os", c.limits.MaxOS); err != nil {
 		return nil, err
 	}
-	message.Metadata = cloneBytes(metadata)
+	if message.SoftwareVersion, err = input.lveString(
+		"software_version",
+		c.limits.MaxSoftwareVersion,
+	); err != nil {
+		return nil, err
+	}
 	return message, nil
 }
 
@@ -147,5 +152,5 @@ func validRegisterRejectCause(value RegisterRejectCause) bool {
 }
 
 func validRegisterFailedField(value RegisterFailedField) bool {
-	return value >= RegisterFieldUnspecified && value <= RegisterFieldMetadata
+	return value >= RegisterFieldUnspecified && value <= RegisterFieldSoftwareVersion
 }

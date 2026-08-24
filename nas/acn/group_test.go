@@ -12,7 +12,7 @@ import (
 func TestGroupingInvitationWireFormat(t *testing.T) {
 	message := &acn.AgentGroupingInvitation{
 		Header:             acn.Header{TransactionID: 0x31},
-		GroupConfig:        json.RawMessage(`{ "group_name" : "task-patrol", "scope":"private", "max_members":5 }`),
+		GroupConfig:        json.RawMessage(`{ "group_id" : "g1" }`),
 		GroupAdministrator: json.RawMessage(`{ "agent_id" : "a1", "skills":["AR"], "future":true }`),
 	}
 	wire, err := acn.Marshal(message)
