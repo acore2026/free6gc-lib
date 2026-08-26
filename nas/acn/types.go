@@ -616,9 +616,3 @@ func (*AgentGroupInfoNotificationResponse) MessageType() MessageType {
 	return MessageTypeAgentGroupInfoNotificationResponse
 }
 func (*AgentGroupInfoNotificationResponse) Direction() Direction { return Uplink }
-
-// Deprecated compatibility aliases. The ACN NAS v1 interface names message
-// 0x15 ACCEPT; the wire assignment is unchanged.
-const MessageTypeAgentNetworkAbilityResponse = MessageTypeAgentNetworkAbilityAccept
-
-type AgentNetworkAbilityResponse = AgentNetworkAbilityAccept
