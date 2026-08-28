@@ -296,10 +296,7 @@ const (
 type AgentNetworkAbilityRequest struct {
 	messageMarker
 	Header
-	AgentID   string
-	Intent    string
-	Timestamp uint64
-	Proof     json.RawMessage
+	NetworkAbilityRequest json.RawMessage
 }
 
 func (*AgentNetworkAbilityRequest) MessageType() MessageType {
@@ -310,8 +307,7 @@ func (*AgentNetworkAbilityRequest) Direction() Direction { return Uplink }
 type AgentNetworkAbilityAccept struct {
 	messageMarker
 	Header
-	Timestamp uint64
-	VC1       json.RawMessage
+	NetworkAbilityResult json.RawMessage
 }
 
 func (*AgentNetworkAbilityAccept) MessageType() MessageType {
@@ -343,11 +339,7 @@ const (
 type AgentPublishRequest struct {
 	messageMarker
 	Header
-	AgentID   string
-	Priority  Priority
-	Timestamp uint64
-	Proof     json.RawMessage
-	VCList    json.RawMessage
+	ProfilePublish json.RawMessage
 }
 
 func (*AgentPublishRequest) MessageType() MessageType { return MessageTypeAgentPublishRequest }
@@ -382,6 +374,7 @@ const (
 	PublishFieldTimestamp
 	PublishFieldProof
 	PublishFieldVCList
+	PublishFieldServiceEndpoints
 )
 
 type AgentPublishReject struct {
@@ -397,11 +390,7 @@ func (*AgentPublishReject) Direction() Direction     { return Downlink }
 type AgentProfileUpdateRequest struct {
 	messageMarker
 	Header
-	AgentID     string
-	UpdateItems json.RawMessage
-	Credentials json.RawMessage
-	Timestamp   uint64
-	Proof       json.RawMessage
+	ProfileUpdate json.RawMessage
 }
 
 func (*AgentProfileUpdateRequest) MessageType() MessageType {
@@ -412,8 +401,7 @@ func (*AgentProfileUpdateRequest) Direction() Direction { return Uplink }
 type AgentProfileUpdateAccept struct {
 	messageMarker
 	Header
-	OperationID string
-	Message     string
+	ProfileUpdateResult json.RawMessage
 }
 
 func (*AgentProfileUpdateAccept) MessageType() MessageType {
@@ -470,27 +458,16 @@ const (
 type AgentSearchRequest struct {
 	messageMarker
 	Header
-	RequesterAgentID string
-	RequiredSkills   []string
-	DiscoveryScope   DiscoveryScope
-	MaxResults       uint8
-	Timestamp        uint64
-	Proof            json.RawMessage
+	DiscoveryRequest json.RawMessage
 }
 
 func (*AgentSearchRequest) MessageType() MessageType { return MessageTypeAgentSearchRequest }
 func (*AgentSearchRequest) Direction() Direction     { return Uplink }
 
-type SearchResult struct {
-	AgentCard json.RawMessage
-	Priority  Priority
-}
-
 type AgentSearchResponse struct {
 	messageMarker
 	Header
-	Results   []SearchResult
-	Timestamp uint64
+	DiscoveryResult json.RawMessage
 }
 
 func (*AgentSearchResponse) MessageType() MessageType { return MessageTypeAgentSearchResponse }
@@ -512,6 +489,7 @@ type SearchFailedField uint8
 const (
 	SearchFieldUnspecified SearchFailedField = iota
 	SearchFieldAgentID
+	SearchFieldTaskDescription
 	SearchFieldRequiredSkills
 	SearchFieldDiscoveryScope
 	SearchFieldMaxResults
@@ -532,11 +510,7 @@ func (*AgentSearchReject) Direction() Direction     { return Downlink }
 type AgentGroupingRequest struct {
 	messageMarker
 	Header
-	AgentID        string
-	TargetAgentIDs []string
-	GroupConfig    json.RawMessage
-	Timestamp      uint64
-	Proof          json.RawMessage
+	GroupCreation json.RawMessage
 }
 
 func (*AgentGroupingRequest) MessageType() MessageType { return MessageTypeAgentGroupingRequest }
@@ -588,8 +562,7 @@ func (*AgentGroupingReject) Direction() Direction     { return Downlink }
 type AgentGroupingInvitation struct {
 	messageMarker
 	Header
-	GroupConfig        json.RawMessage
-	GroupAdministrator json.RawMessage
+	GroupInvitation json.RawMessage
 }
 
 func (*AgentGroupingInvitation) MessageType() MessageType {
@@ -618,8 +591,7 @@ func (*AgentGroupingInvitationResponse) Direction() Direction { return Uplink }
 type AgentGroupInfoNotification struct {
 	messageMarker
 	Header
-	GroupID string
-	Members json.RawMessage
+	GroupConfig json.RawMessage
 }
 
 func (*AgentGroupInfoNotification) MessageType() MessageType {
@@ -627,22 +599,17 @@ func (*AgentGroupInfoNotification) MessageType() MessageType {
 }
 func (*AgentGroupInfoNotification) Direction() Direction { return Downlink }
 
-type GroupInfoStatus uint8
+type GroupInfoApplyResult uint8
 
 const (
-	GroupInfoStatusAccepted GroupInfoStatus = iota
-	GroupInfoStatusRejected
+	GroupInfoApplyResultACK GroupInfoApplyResult = iota
+	GroupInfoApplyResultReject
 )
 
 type AgentGroupInfoNotificationResponse struct {
 	messageMarker
 	Header
-	GroupID   string
-	AgentID   string
-	Status    GroupInfoStatus
-	Detail    string
-	Timestamp uint64
-	Proof     json.RawMessage
+	ApplyResult GroupInfoApplyResult
 }
 
 func (*AgentGroupInfoNotificationResponse) MessageType() MessageType {

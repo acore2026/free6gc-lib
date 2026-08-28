@@ -1,68 +1,41 @@
 package acn
 
 func (c *Codec) encodeAgentNetworkAbilityRequest(output *encoder, message *AgentNetworkAbilityRequest) error {
-	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
+	if err := validateJSONObject(message.NetworkAbilityRequest, "network_ability_request", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if err := validateString(message.Intent, "intent", c.limits.MaxIntent); err != nil {
-		return err
-	}
-	if message.Intent != NetworkAbilityIntentIssueCredential {
-		return newProtocolError(ErrorCodeInvalidValue, "intent", -1, ErrInvalidValue)
-	}
-	output.lve([]byte(message.AgentID))
-	output.lve([]byte(message.Intent))
-	output.uint64(message.Timestamp)
-	return c.encodeProof(output, message.Proof, "proof")
+	output.lve(message.NetworkAbilityRequest)
+	return nil
 }
 
 func (c *Codec) decodeAgentNetworkAbilityRequest(input *decoder, header Header) (Message, error) {
-	agentID, err := input.lveString("agent_id", c.limits.MaxAgentID)
+	value, err := input.lveBytes("network_ability_request", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	intent, err := input.lveString("intent", c.limits.MaxIntent)
-	if err != nil {
+	if err := validateJSONObject(value, "network_ability_request", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	if intent != NetworkAbilityIntentIssueCredential {
-		return nil, newProtocolError(ErrorCodeInvalidValue, "intent", input.offset-len(intent), ErrInvalidValue)
-	}
-	timestamp, err := input.uint64("timestamp")
-	if err != nil {
-		return nil, err
-	}
-	proof, err := c.decodeProof(input, "proof")
-	if err != nil {
-		return nil, err
-	}
-	return &AgentNetworkAbilityRequest{
-		Header: header, AgentID: agentID, Intent: intent, Timestamp: timestamp, Proof: proof,
-	}, nil
+	return &AgentNetworkAbilityRequest{Header: header, NetworkAbilityRequest: cloneBytes(value)}, nil
 }
 
 func (c *Codec) encodeAgentNetworkAbilityAccept(output *encoder, message *AgentNetworkAbilityAccept) error {
-	if err := validateJSONObject(message.VC1, "vc1", c.limits.MaxJSONContainer); err != nil {
+	if err := validateJSONObject(message.NetworkAbilityResult, "network_ability_result", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	output.uint64(message.Timestamp)
-	output.lve(message.VC1)
+	output.lve(message.NetworkAbilityResult)
 	return nil
 }
 
 func (c *Codec) decodeAgentNetworkAbilityAccept(input *decoder, header Header) (Message, error) {
-	timestamp, err := input.uint64("timestamp")
+	value, err := input.lveBytes("network_ability_result", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	vc1, err := input.lveBytes("vc1", c.limits.MaxJSONContainer)
-	if err != nil {
+	if err := validateJSONObject(value, "network_ability_result", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	if err := validateJSONObject(vc1, "vc1", c.limits.MaxJSONContainer); err != nil {
-		return nil, err
-	}
-	return &AgentNetworkAbilityAccept{Header: header, Timestamp: timestamp, VC1: cloneBytes(vc1)}, nil
+	return &AgentNetworkAbilityAccept{Header: header, NetworkAbilityResult: cloneBytes(value)}, nil
 }
 
 func encodeAgentNetworkAbilityReject(output *encoder, message *AgentNetworkAbilityReject) error {

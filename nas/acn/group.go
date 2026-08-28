@@ -1,66 +1,22 @@
 package acn
 
-import "math"
-
 func (c *Codec) encodeAgentGroupingRequest(output *encoder, message *AgentGroupingRequest) error {
-	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
+	if err := validateJSONObject(message.GroupCreation, "group_creation", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if len(message.TargetAgentIDs) < 1 || len(message.TargetAgentIDs) > math.MaxUint8 {
-		return newProtocolError(ErrorCodeInvalidLength, "target_agents", -1, ErrInvalidLength)
-	}
-	output.lve([]byte(message.AgentID))
-	output.uint8(uint8(len(message.TargetAgentIDs)))
-	for _, agentID := range message.TargetAgentIDs {
-		if err := validateString(agentID, "target_agent_id", c.limits.MaxAgentID); err != nil {
-			return err
-		}
-		output.lve([]byte(agentID))
-	}
-	if err := validateJSONObject(message.GroupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-	output.lve(message.GroupConfig)
-	output.uint64(message.Timestamp)
-	return c.encodeProof(output, message.Proof, "proof")
+	output.lve(message.GroupCreation)
+	return nil
 }
 
 func (c *Codec) decodeAgentGroupingRequest(input *decoder, header Header) (Message, error) {
-	message := &AgentGroupingRequest{Header: header}
-	var err error
-	if message.AgentID, err = input.lveString("agent_id", c.limits.MaxAgentID); err != nil {
-		return nil, err
-	}
-	count, err := input.uint8("target_agent_count")
+	groupCreation, err := input.lveBytes("group_creation", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	if count == 0 {
-		return nil, newProtocolError(ErrorCodeInvalidLength, "target_agent_count", input.offset-1, ErrInvalidLength)
-	}
-	message.TargetAgentIDs = make([]string, 0, int(count))
-	for range int(count) {
-		agentID, err := input.lveString("target_agent_id", c.limits.MaxAgentID)
-		if err != nil {
-			return nil, err
-		}
-		message.TargetAgentIDs = append(message.TargetAgentIDs, agentID)
-	}
-	groupConfig, err := input.lveBytes("group_config", c.limits.MaxJSONContainer)
-	if err != nil {
+	if err := validateJSONObject(groupCreation, "group_creation", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	if err := validateJSONObject(groupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
-		return nil, err
-	}
-	message.GroupConfig = cloneBytes(groupConfig)
-	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
-		return nil, err
-	}
-	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
-		return nil, err
-	}
-	return message, nil
+	return &AgentGroupingRequest{Header: header, GroupCreation: cloneBytes(groupCreation)}, nil
 }
 
 func (c *Codec) encodeAgentGroupingAccept(output *encoder, message *AgentGroupingAccept) error {
@@ -120,37 +76,22 @@ func (c *Codec) decodeAgentGroupingReject(input *decoder, header Header) (Messag
 }
 
 func (c *Codec) encodeAgentGroupingInvitation(output *encoder, message *AgentGroupingInvitation) error {
-	if err := validateJSONObject(message.GroupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
+	if err := validateJSONObject(message.GroupInvitation, "group_invitation", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if err := validateJSONObject(message.GroupAdministrator, "group_administrator", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-	output.lve(message.GroupConfig)
-	output.lve(message.GroupAdministrator)
+	output.lve(message.GroupInvitation)
 	return nil
 }
 
 func (c *Codec) decodeAgentGroupingInvitation(input *decoder, header Header) (Message, error) {
-	groupConfig, err := input.lveBytes("group_config", c.limits.MaxJSONContainer)
+	groupInvitation, err := input.lveBytes("group_invitation", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateJSONObject(groupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
+	if err := validateJSONObject(groupInvitation, "group_invitation", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	groupAdministrator, err := input.lveBytes("group_administrator", c.limits.MaxJSONContainer)
-	if err != nil {
-		return nil, err
-	}
-	if err := validateJSONObject(groupAdministrator, "group_administrator", c.limits.MaxJSONContainer); err != nil {
-		return nil, err
-	}
-	return &AgentGroupingInvitation{
-		Header:             header,
-		GroupConfig:        cloneBytes(groupConfig),
-		GroupAdministrator: cloneBytes(groupAdministrator),
-	}, nil
+	return &AgentGroupingInvitation{Header: header, GroupInvitation: cloneBytes(groupInvitation)}, nil
 }
 
 func encodeAgentGroupingInvitationResponse(output *encoder, message *AgentGroupingInvitationResponse) error {
@@ -174,81 +115,39 @@ func decodeAgentGroupingInvitationResponse(input *decoder, header Header) (Messa
 }
 
 func (c *Codec) encodeAgentGroupInfoNotification(output *encoder, message *AgentGroupInfoNotification) error {
-	if err := validateString(message.GroupID, "group_id", c.limits.MaxGroupID); err != nil {
+	if err := validateJSONObject(message.GroupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if err := validateJSONObject(message.Members, "members", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-	output.lve([]byte(message.GroupID))
-	output.lve(message.Members)
+	output.lve(message.GroupConfig)
 	return nil
 }
 
 func (c *Codec) decodeAgentGroupInfoNotification(input *decoder, header Header) (Message, error) {
-	message := &AgentGroupInfoNotification{Header: header}
-	var err error
-	if message.GroupID, err = input.lveString("group_id", c.limits.MaxGroupID); err != nil {
-		return nil, err
-	}
-	members, err := input.lveBytes("members", c.limits.MaxJSONContainer)
+	groupConfig, err := input.lveBytes("group_config", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateJSONObject(members, "members", c.limits.MaxJSONContainer); err != nil {
+	if err := validateJSONObject(groupConfig, "group_config", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	message.Members = cloneBytes(members)
-	return message, nil
+	return &AgentGroupInfoNotification{Header: header, GroupConfig: cloneBytes(groupConfig)}, nil
 }
 
 func (c *Codec) encodeAgentGroupInfoNotificationResponse(output *encoder, message *AgentGroupInfoNotificationResponse) error {
-	if err := validateString(message.GroupID, "group_id", c.limits.MaxGroupID); err != nil {
-		return err
+	if message.ApplyResult != GroupInfoApplyResultACK && message.ApplyResult != GroupInfoApplyResultReject {
+		return newProtocolError(ErrorCodeInvalidValue, "apply_result", -1, ErrInvalidValue)
 	}
-	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
-		return err
-	}
-	if message.Status != GroupInfoStatusAccepted && message.Status != GroupInfoStatusRejected {
-		return newProtocolError(ErrorCodeInvalidValue, "status", -1, ErrInvalidValue)
-	}
-	if message.Detail != "" {
-		if err := validateString(message.Detail, "detail", c.limits.MaxDescription); err != nil {
-			return err
-		}
-	}
-	output.lve([]byte(message.GroupID))
-	output.lve([]byte(message.AgentID))
-	output.uint8(uint8(message.Status))
-	output.lve([]byte(message.Detail))
-	output.uint64(message.Timestamp)
-	return c.encodeProof(output, message.Proof, "proof")
+	output.uint8(uint8(message.ApplyResult))
+	return nil
 }
 
 func (c *Codec) decodeAgentGroupInfoNotificationResponse(input *decoder, header Header) (Message, error) {
-	message := &AgentGroupInfoNotificationResponse{Header: header}
-	var err error
-	if message.GroupID, err = input.lveString("group_id", c.limits.MaxGroupID); err != nil {
-		return nil, err
-	}
-	if message.AgentID, err = input.lveString("agent_id", c.limits.MaxAgentID); err != nil {
-		return nil, err
-	}
-	status, err := input.uint8("status")
+	applyResult, err := input.uint8("apply_result")
 	if err != nil {
 		return nil, err
 	}
-	message.Status = GroupInfoStatus(status)
-	if message.Status != GroupInfoStatusAccepted && message.Status != GroupInfoStatusRejected {
-		return nil, newProtocolError(ErrorCodeInvalidValue, "status", input.offset-1, ErrInvalidValue)
-	}
-	if message.Detail, err = input.lveOptionalString("detail", c.limits.MaxDescription); err != nil {
-		return nil, err
-	}
-	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
-		return nil, err
-	}
-	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
+	message := &AgentGroupInfoNotificationResponse{Header: header, ApplyResult: GroupInfoApplyResult(applyResult)}
+	if err := c.encodeAgentGroupInfoNotificationResponse(&encoder{}, message); err != nil {
 		return nil, err
 	}
 	return message, nil

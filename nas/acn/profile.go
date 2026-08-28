@@ -1,75 +1,41 @@
 package acn
 
 func (c *Codec) encodeAgentProfileUpdateRequest(output *encoder, message *AgentProfileUpdateRequest) error {
-	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
+	if err := validateJSONObject(message.ProfileUpdate, "profile_update", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if err := validateJSONArray(message.UpdateItems, "update_items", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-	if err := validateJSONArrayAllowEmpty(message.Credentials, "credentials", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-	output.lve([]byte(message.AgentID))
-	output.lve(message.UpdateItems)
-	output.lve(message.Credentials)
-	output.uint64(message.Timestamp)
-	return c.encodeProof(output, message.Proof, "proof")
+	output.lve(message.ProfileUpdate)
+	return nil
 }
 
 func (c *Codec) decodeAgentProfileUpdateRequest(input *decoder, header Header) (Message, error) {
-	message := &AgentProfileUpdateRequest{Header: header}
-	var err error
-	if message.AgentID, err = input.lveString("agent_id", c.limits.MaxAgentID); err != nil {
-		return nil, err
-	}
-	updateItems, err := input.lveBytes("update_items", c.limits.MaxJSONContainer)
+	profileUpdate, err := input.lveBytes("profile_update", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateJSONArray(updateItems, "update_items", c.limits.MaxJSONContainer); err != nil {
+	if err := validateJSONObject(profileUpdate, "profile_update", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	message.UpdateItems = cloneBytes(updateItems)
-	credentials, err := input.lveBytes("credentials", c.limits.MaxJSONContainer)
-	if err != nil {
-		return nil, err
-	}
-	if err := validateJSONArrayAllowEmpty(credentials, "credentials", c.limits.MaxJSONContainer); err != nil {
-		return nil, err
-	}
-	message.Credentials = cloneBytes(credentials)
-	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
-		return nil, err
-	}
-	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
-		return nil, err
-	}
-	return message, nil
+	return &AgentProfileUpdateRequest{Header: header, ProfileUpdate: cloneBytes(profileUpdate)}, nil
 }
 
 func (c *Codec) encodeAgentProfileUpdateAccept(output *encoder, message *AgentProfileUpdateAccept) error {
-	if err := validateString(message.OperationID, "operation_id", c.limits.MaxOperationID); err != nil {
+	if err := validateJSONObject(message.ProfileUpdateResult, "profile_update_result", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if err := validateString(message.Message, "message", c.limits.MaxDescription); err != nil {
-		return err
-	}
-	output.lve([]byte(message.OperationID))
-	output.lve([]byte(message.Message))
+	output.lve(message.ProfileUpdateResult)
 	return nil
 }
 
 func (c *Codec) decodeAgentProfileUpdateAccept(input *decoder, header Header) (Message, error) {
-	operationID, err := input.lveString("operation_id", c.limits.MaxOperationID)
+	profileUpdateResult, err := input.lveBytes("profile_update_result", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	message, err := input.lveString("message", c.limits.MaxDescription)
-	if err != nil {
+	if err := validateJSONObject(profileUpdateResult, "profile_update_result", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	return &AgentProfileUpdateAccept{Header: header, OperationID: operationID, Message: message}, nil
+	return &AgentProfileUpdateAccept{Header: header, ProfileUpdateResult: cloneBytes(profileUpdateResult)}, nil
 }
 
 func encodeAgentProfileUpdateReject(output *encoder, message *AgentProfileUpdateReject) error {

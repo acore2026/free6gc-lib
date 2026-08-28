@@ -33,12 +33,12 @@ func TestCodecRejectsInvalidEnvelopeFields(t *testing.T) {
 
 func TestCodecRejectsInvalidCurrentMessages(t *testing.T) {
 	tests := []acn.Message{
-		&acn.AgentNetworkAbilityRequest{Header: acn.Header{TransactionID: 1}, AgentID: "a1"},
-		&acn.AgentPublishRequest{Header: acn.Header{TransactionID: 1}, AgentID: "a1", Priority: acn.Priority(9), Timestamp: 1, Proof: json.RawMessage(`{"creator":"a","signature_value":"x"}`), VCList: []byte(`[{"id":"vc"}]`)},
-		&acn.AgentSearchRequest{Header: acn.Header{TransactionID: 1}, RequesterAgentID: "a1", DiscoveryScope: acn.DiscoveryScopeIntraPLMN, MaxResults: 1},
+		&acn.AgentNetworkAbilityRequest{Header: acn.Header{TransactionID: 1}, NetworkAbilityRequest: json.RawMessage(`[]`)},
+		&acn.AgentPublishRequest{Header: acn.Header{TransactionID: 1}, ProfilePublish: json.RawMessage(`[]`)},
+		&acn.AgentSearchRequest{Header: acn.Header{TransactionID: 1}, DiscoveryRequest: json.RawMessage(`[]`)},
 		&acn.AgentRegisterRequest{Header: acn.Header{TransactionID: 1}, Owner: "u1", AgentName: "a1", PublicKey: []byte("key"), Description: "agent", Timestamp: 1, Signature: []byte("sig")},
-		&acn.AgentProfileUpdateRequest{Header: acn.Header{TransactionID: 1}, AgentID: "a1", UpdateItems: json.RawMessage(`{}`), Timestamp: 1, Proof: json.RawMessage(`{"creator":"a","signature_value":"x"}`)},
-		&acn.AgentGroupingInvitation{Header: acn.Header{TransactionID: 1}, GroupConfig: json.RawMessage(`{}`), GroupAdministrator: json.RawMessage(`{"agent_id":"a1"}`)},
+		&acn.AgentProfileUpdateRequest{Header: acn.Header{TransactionID: 1}, ProfileUpdate: json.RawMessage(`[]`)},
+		&acn.AgentGroupingInvitation{Header: acn.Header{TransactionID: 1}, GroupInvitation: json.RawMessage(`[]`)},
 		&acn.AgentGroupingInvitationResponse{Header: acn.Header{TransactionID: 1}, Decision: acn.GroupingDecision(9)},
 	}
 	for _, message := range tests {

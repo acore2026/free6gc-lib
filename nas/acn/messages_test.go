@@ -11,7 +11,7 @@ import (
 func TestCurrentMessagesRoundTrip(t *testing.T) {
 	header := acn.Header{TransactionID: 33}
 	proof := json.RawMessage(`{ "type":"JsonWebSignature2020", "verification_method":"did:key:k1", "jws":"sig", "future":true }`)
-	groupConfig := json.RawMessage(`{ "group_name" : "task-patrol", "scope":"private", "max_members":5, "future":true }`)
+	groupConfig := json.RawMessage(`{ "group_id":"g1", "members":["a1","a2"], "future":true }`)
 	messages := []acn.Message{
 		&acn.AgentRegisterRequest{Header: header, Owner: "u1", AgentName: "Alice", PublicKey: []byte{1, 2, 3}, Description: "Model-X", Timestamp: 1, Signature: []byte("sig"), Metadata: json.RawMessage(`{ "region":"CN", "os":"Linux", "version":"1.0.0", "future":true }`)},
 		&acn.AgentRegisterAccept{Header: header, AgentID: "a1", VC0: json.RawMessage(`{"id":"vc0"}`)},
@@ -19,25 +19,25 @@ func TestCurrentMessagesRoundTrip(t *testing.T) {
 		&acn.AgentDeregisterRequest{Header: header, AgentID: "a1", Reason: acn.DeregistrationReasonRetired, Timestamp: 2, Proof: proof},
 		&acn.AgentDeregisterAccept{Header: header},
 		&acn.AgentDeregisterReject{Header: header, Cause: acn.DeregisterRejectAgentNotFound, FailedField: acn.DeregisterFieldAgentID},
-		&acn.AgentNetworkAbilityRequest{Header: header, AgentID: "a1", Intent: "Issue Network Ability Credential", Timestamp: 3, Proof: proof},
-		&acn.AgentNetworkAbilityAccept{Header: header, Timestamp: 4, VC1: json.RawMessage(`{"id":"vc1"}`)},
+		&acn.AgentNetworkAbilityRequest{Header: header, NetworkAbilityRequest: json.RawMessage(`{"agent_id":"a1","intent":"Issue Network Ability Credential","timestamp":3,"proof":{"jws":"sig"}}`)},
+		&acn.AgentNetworkAbilityAccept{Header: header, NetworkAbilityResult: json.RawMessage(`{"timestamp":4,"vc1":{"id":"vc1"}}`)},
 		&acn.AgentNetworkAbilityReject{Header: header, Cause: acn.NetworkAbilityRejectNotAuthorized, FailedField: acn.NetworkAbilityFieldProof},
-		&acn.AgentPublishRequest{Header: header, AgentID: "a1", Priority: acn.PriorityNormal, Timestamp: 5, Proof: proof, VCList: json.RawMessage(`[{"id":"vc2"}]`)},
+		&acn.AgentPublishRequest{Header: header, ProfilePublish: json.RawMessage(`{"agent_id":"a1","priority":2,"timestamp":5,"proof":{"jws":"sig"},"vc_list":[{"id":"vc2"}]}`)},
 		&acn.AgentPublishAccept{Header: header},
 		&acn.AgentPublishReject{Header: header, Cause: acn.PublishRejectVCInvalid, FailedField: acn.PublishFieldVCList},
-		&acn.AgentProfileUpdateRequest{Header: header, AgentID: "a1", UpdateItems: json.RawMessage(`[{"update_type":"add_skill","skill_name":"Driving","reference_vc_id":"vc2"},{"update_type":"remove_skill","skill_name":"Vision","future":true}]`), Credentials: json.RawMessage(`[{"id":"vc2"}]`), Timestamp: 6, Proof: proof},
-		&acn.AgentProfileUpdateAccept{Header: header, OperationID: "op-1", Message: "Agent card updated"},
+		&acn.AgentProfileUpdateRequest{Header: header, ProfileUpdate: json.RawMessage(`{"agent_id":"a1","updates":[{"skill":"Driving"}],"timestamp":6}`)},
+		&acn.AgentProfileUpdateAccept{Header: header, ProfileUpdateResult: json.RawMessage(`{"operation_id":"op-1","message":"Agent card updated"}`)},
 		&acn.AgentProfileUpdateReject{Header: header, Cause: acn.ProfileUpdateRejectCredentialInvalid, FailedField: acn.ProfileUpdateFieldCredentials, RelatedItemIndex: 1},
-		&acn.AgentSearchRequest{Header: header, RequesterAgentID: "a1", RequiredSkills: []string{"camera", "radar"}, DiscoveryScope: acn.DiscoveryScopeIntraPLMN, MaxResults: 10, Timestamp: 7, Proof: proof},
-		&acn.AgentSearchResponse{Header: header, Results: []acn.SearchResult{{AgentCard: json.RawMessage(`{ "agent_id":"a2", "ipv4":"10.60.0.12", "skills":["patrol"], "future":true }`), Priority: acn.PriorityHigh}, {AgentCard: json.RawMessage(`{"agent_id":"a3","ipv6":"2001:db8::3","skills":["drive"]}`), Priority: acn.PriorityNormal}}, Timestamp: 8},
+		&acn.AgentSearchRequest{Header: header, DiscoveryRequest: json.RawMessage(`{"requester_agent_id":"a1","required_skills":["camera","radar"],"max_results":10,"timestamp":7}`)},
+		&acn.AgentSearchResponse{Header: header, DiscoveryResult: json.RawMessage(`{"results":[{"agent_id":"a2","skills":["patrol"]},{"agent_id":"a3","skills":["drive"]}],"timestamp":8}`)},
 		&acn.AgentSearchReject{Header: header, Cause: acn.SearchRejectProofInvalid, FailedField: acn.SearchFieldProof},
-		&acn.AgentGroupingRequest{Header: header, AgentID: "a1", TargetAgentIDs: []string{"a2", "a3"}, GroupConfig: groupConfig, Timestamp: 9, Proof: proof},
+		&acn.AgentGroupingRequest{Header: header, GroupCreation: json.RawMessage(`{"source_agent_id":"a1","target_agent_ids":["a2","a3"],"timestamp":9}`)},
 		&acn.AgentGroupingAccept{Header: header, GroupID: "g1"},
 		&acn.AgentGroupingReject{Header: header, Cause: acn.GroupingRejectTargetAgentRejected, FailedField: acn.GroupingFieldTargetAgents, RelatedAgentID: "a2"},
-		&acn.AgentGroupingInvitation{Header: header, GroupConfig: groupConfig, GroupAdministrator: json.RawMessage(`{ "display_name":"Alice", "future":true }`)},
+		&acn.AgentGroupingInvitation{Header: header, GroupInvitation: json.RawMessage(`{"group_id":"g1","group_administrator":{"display_name":"Alice"}}`)},
 		&acn.AgentGroupingInvitationResponse{Header: header, Decision: acn.GroupingDecisionAccept},
-		&acn.AgentGroupInfoNotification{Header: header, GroupID: "g1", Members: json.RawMessage(`{"agent1":{"agent_id":"a1"}}`)},
-		&acn.AgentGroupInfoNotificationResponse{Header: header, GroupID: "g1", AgentID: "a1", Status: acn.GroupInfoStatusAccepted, Detail: "connected", Timestamp: 11, Proof: proof},
+		&acn.AgentGroupInfoNotification{Header: header, GroupConfig: groupConfig},
+		&acn.AgentGroupInfoNotificationResponse{Header: header, ApplyResult: acn.GroupInfoApplyResultACK},
 	}
 
 	for _, message := range messages {

@@ -11,15 +11,14 @@ import (
 
 func TestGroupingInvitationWireFormat(t *testing.T) {
 	message := &acn.AgentGroupingInvitation{
-		Header:             acn.Header{TransactionID: 0x31},
-		GroupConfig:        json.RawMessage(`{ "group_id" : "g1" }`),
-		GroupAdministrator: json.RawMessage(`{ "agent_id" : "a1", "skills":["AR"], "future":true }`),
+		Header:          acn.Header{TransactionID: 0x31},
+		GroupInvitation: json.RawMessage(`{ "group_id" : "g1", "group_administrator":{"agent_id":"a1"}, "future":true }`),
 	}
 	wire, err := acn.Marshal(message)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantHex := "011031" + lveHex(message.GroupConfig) + lveHex(message.GroupAdministrator)
+	wantHex := "011031" + lveHex(message.GroupInvitation)
 	want, err := hex.DecodeString(wantHex)
 	if err != nil {
 		t.Fatal(err)
@@ -32,7 +31,7 @@ func TestGroupingInvitationWireFormat(t *testing.T) {
 		t.Fatal(err)
 	}
 	invitation := decoded.(*acn.AgentGroupingInvitation)
-	if string(invitation.GroupConfig) != string(message.GroupConfig) || string(invitation.GroupAdministrator) != string(message.GroupAdministrator) {
+	if string(invitation.GroupInvitation) != string(message.GroupInvitation) {
 		t.Fatalf("unexpected decoded invitation: %#v", invitation)
 	}
 }

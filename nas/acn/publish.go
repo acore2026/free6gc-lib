@@ -1,61 +1,29 @@
 package acn
 
 func (c *Codec) encodeAgentPublishRequest(output *encoder, message *AgentPublishRequest) error {
-	if err := validateString(message.AgentID, "agent_id", c.limits.MaxAgentID); err != nil {
+	if err := validateJSONObject(message.ProfilePublish, "profile_publish", c.limits.MaxJSONContainer); err != nil {
 		return err
 	}
-	if !validPriority(message.Priority) {
-		return newProtocolError(ErrorCodeInvalidValue, "priority", -1, ErrInvalidValue)
-	}
-	if err := validateJSONArray(message.VCList, "vc_list", c.limits.MaxJSONContainer); err != nil {
-		return err
-	}
-	output.lve([]byte(message.AgentID))
-	output.uint8(uint8(message.Priority))
-	output.uint64(message.Timestamp)
-	if err := c.encodeProof(output, message.Proof, "proof"); err != nil {
-		return err
-	}
-	output.lve(message.VCList)
+	output.lve(message.ProfilePublish)
 	return nil
 }
 
 func (c *Codec) decodeAgentPublishRequest(input *decoder, header Header) (Message, error) {
-	message := &AgentPublishRequest{Header: header}
-	var err error
-	if message.AgentID, err = input.lveString("agent_id", c.limits.MaxAgentID); err != nil {
-		return nil, err
-	}
-	priority, err := input.uint8("priority")
+	value, err := input.lveBytes("profile_publish", c.limits.MaxJSONContainer)
 	if err != nil {
 		return nil, err
 	}
-	message.Priority = Priority(priority)
-	if !validPriority(message.Priority) {
-		return nil, newProtocolError(ErrorCodeInvalidValue, "priority", input.offset-1, ErrInvalidValue)
-	}
-	if message.Timestamp, err = input.uint64("timestamp"); err != nil {
+	if err := validateJSONObject(value, "profile_publish", c.limits.MaxJSONContainer); err != nil {
 		return nil, err
 	}
-	if message.Proof, err = c.decodeProof(input, "proof"); err != nil {
-		return nil, err
-	}
-	vcList, err := input.lveBytes("vc_list", c.limits.MaxJSONContainer)
-	if err != nil {
-		return nil, err
-	}
-	if err := validateJSONArray(vcList, "vc_list", c.limits.MaxJSONContainer); err != nil {
-		return nil, err
-	}
-	message.VCList = cloneBytes(vcList)
-	return message, nil
+	return &AgentPublishRequest{Header: header, ProfilePublish: cloneBytes(value)}, nil
 }
 
 func encodeAgentPublishReject(output *encoder, message *AgentPublishReject) error {
 	if message.Cause < PublishRejectAgentInvalid || message.Cause > PublishRejectInternalError {
 		return newProtocolError(ErrorCodeInvalidValue, "reject_cause", -1, ErrInvalidValue)
 	}
-	if message.FailedField < PublishFieldUnspecified || message.FailedField > PublishFieldVCList {
+	if message.FailedField < PublishFieldUnspecified || message.FailedField > PublishFieldServiceEndpoints {
 		return newProtocolError(ErrorCodeInvalidValue, "failed_field", -1, ErrInvalidValue)
 	}
 	output.uint8(uint8(message.Cause))
