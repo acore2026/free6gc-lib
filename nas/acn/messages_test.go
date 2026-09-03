@@ -35,9 +35,9 @@ func TestCurrentMessagesRoundTrip(t *testing.T) {
 		&acn.AgentGroupingAccept{Header: header, GroupID: "g1"},
 		&acn.AgentGroupingReject{Header: header, Cause: acn.GroupingRejectTargetAgentRejected, FailedField: acn.GroupingFieldTargetAgents, RelatedAgentID: "a2"},
 		&acn.AgentGroupingInvitation{Header: header, GroupInvitation: json.RawMessage(`{"group_id":"g1","group_administrator":{"display_name":"Alice"}}`)},
-		&acn.AgentGroupingInvitationResponse{Header: header, Decision: acn.GroupingDecisionAccept},
+		&acn.AgentGroupingInvitationResponse{Header: header, Decision: acn.GroupingDecisionAccept, GroupID: "g1"},
 		&acn.AgentGroupInfoNotification{Header: header, GroupConfig: groupConfig},
-		&acn.AgentGroupInfoNotificationResponse{Header: header, ApplyResult: acn.GroupInfoApplyResultACK},
+		&acn.AgentGroupInfoNotificationResponse{Header: header, ApplyResult: acn.GroupInfoApplyResultACK, GroupID: "g1"},
 	}
 
 	for _, message := range messages {

@@ -581,6 +581,7 @@ type AgentGroupingInvitationResponse struct {
 	messageMarker
 	Header
 	Decision GroupingDecision
+	GroupID  string
 }
 
 func (*AgentGroupingInvitationResponse) MessageType() MessageType {
@@ -610,6 +611,7 @@ type AgentGroupInfoNotificationResponse struct {
 	messageMarker
 	Header
 	ApplyResult GroupInfoApplyResult
+	GroupID     string
 }
 
 func (*AgentGroupInfoNotificationResponse) MessageType() MessageType {

@@ -339,7 +339,7 @@ func (c *Codec) Marshal(message Message) ([]byte, error) {
 	case *AgentGroupingInvitation:
 		err = c.encodeAgentGroupingInvitation(output, typed)
 	case *AgentGroupingInvitationResponse:
-		err = encodeAgentGroupingInvitationResponse(output, typed)
+		err = c.encodeAgentGroupingInvitationResponse(output, typed)
 	case *AgentGroupInfoNotification:
 		err = c.encodeAgentGroupInfoNotification(output, typed)
 	case *AgentGroupInfoNotificationResponse:
@@ -479,7 +479,7 @@ func (c *Codec) Unmarshal(direction Direction, payload []byte) (Message, error) 
 	case MessageTypeAgentGroupingInvitation:
 		message, err = c.decodeAgentGroupingInvitation(input, header)
 	case MessageTypeAgentGroupingInvitationResponse:
-		message, err = decodeAgentGroupingInvitationResponse(input, header)
+		message, err = c.decodeAgentGroupingInvitationResponse(input, header)
 	case MessageTypeAgentGroupInfoNotification:
 		message, err = c.decodeAgentGroupInfoNotification(input, header)
 	case MessageTypeAgentGroupInfoNotificationResponse:

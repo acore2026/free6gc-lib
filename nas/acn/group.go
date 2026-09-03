@@ -94,21 +94,29 @@ func (c *Codec) decodeAgentGroupingInvitation(input *decoder, header Header) (Me
 	return &AgentGroupingInvitation{Header: header, GroupInvitation: cloneBytes(groupInvitation)}, nil
 }
 
-func encodeAgentGroupingInvitationResponse(output *encoder, message *AgentGroupingInvitationResponse) error {
+func (c *Codec) encodeAgentGroupingInvitationResponse(output *encoder, message *AgentGroupingInvitationResponse) error {
 	if message.Decision != GroupingDecisionAccept && message.Decision != GroupingDecisionReject {
 		return newProtocolError(ErrorCodeInvalidValue, "decision", -1, ErrInvalidValue)
 	}
+	if err := validateString(message.GroupID, "group_id", c.limits.MaxGroupID); err != nil {
+		return err
+	}
 	output.uint8(uint8(message.Decision))
+	output.lve([]byte(message.GroupID))
 	return nil
 }
 
-func decodeAgentGroupingInvitationResponse(input *decoder, header Header) (Message, error) {
+func (c *Codec) decodeAgentGroupingInvitationResponse(input *decoder, header Header) (Message, error) {
 	decision, err := input.uint8("decision")
 	if err != nil {
 		return nil, err
 	}
-	message := &AgentGroupingInvitationResponse{Header: header, Decision: GroupingDecision(decision)}
-	if err := encodeAgentGroupingInvitationResponse(&encoder{}, message); err != nil {
+	groupID, err := input.lveString("group_id", c.limits.MaxGroupID)
+	if err != nil {
+		return nil, err
+	}
+	message := &AgentGroupingInvitationResponse{Header: header, Decision: GroupingDecision(decision), GroupID: groupID}
+	if err := c.encodeAgentGroupingInvitationResponse(&encoder{}, message); err != nil {
 		return nil, err
 	}
 	return message, nil
@@ -137,7 +145,11 @@ func (c *Codec) encodeAgentGroupInfoNotificationResponse(output *encoder, messag
 	if message.ApplyResult != GroupInfoApplyResultACK && message.ApplyResult != GroupInfoApplyResultReject {
 		return newProtocolError(ErrorCodeInvalidValue, "apply_result", -1, ErrInvalidValue)
 	}
+	if err := validateString(message.GroupID, "group_id", c.limits.MaxGroupID); err != nil {
+		return err
+	}
 	output.uint8(uint8(message.ApplyResult))
+	output.lve([]byte(message.GroupID))
 	return nil
 }
 
@@ -146,7 +158,11 @@ func (c *Codec) decodeAgentGroupInfoNotificationResponse(input *decoder, header 
 	if err != nil {
 		return nil, err
 	}
-	message := &AgentGroupInfoNotificationResponse{Header: header, ApplyResult: GroupInfoApplyResult(applyResult)}
+	groupID, err := input.lveString("group_id", c.limits.MaxGroupID)
+	if err != nil {
+		return nil, err
+	}
+	message := &AgentGroupInfoNotificationResponse{Header: header, ApplyResult: GroupInfoApplyResult(applyResult), GroupID: groupID}
 	if err := c.encodeAgentGroupInfoNotificationResponse(&encoder{}, message); err != nil {
 		return nil, err
 	}

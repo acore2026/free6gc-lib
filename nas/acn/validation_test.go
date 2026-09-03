@@ -39,7 +39,9 @@ func TestCodecRejectsInvalidCurrentMessages(t *testing.T) {
 		&acn.AgentRegisterRequest{Header: acn.Header{TransactionID: 1}, Owner: "u1", AgentName: "a1", PublicKey: []byte("key"), Description: "agent", Timestamp: 1, Signature: []byte("sig")},
 		&acn.AgentProfileUpdateRequest{Header: acn.Header{TransactionID: 1}, ProfileUpdate: json.RawMessage(`[]`)},
 		&acn.AgentGroupingInvitation{Header: acn.Header{TransactionID: 1}, GroupInvitation: json.RawMessage(`[]`)},
-		&acn.AgentGroupingInvitationResponse{Header: acn.Header{TransactionID: 1}, Decision: acn.GroupingDecision(9)},
+		&acn.AgentGroupingInvitationResponse{Header: acn.Header{TransactionID: 1}, Decision: acn.GroupingDecision(9), GroupID: "g1"},
+		&acn.AgentGroupingInvitationResponse{Header: acn.Header{TransactionID: 1}, Decision: acn.GroupingDecisionAccept},
+		&acn.AgentGroupInfoNotificationResponse{Header: acn.Header{TransactionID: 1}, ApplyResult: acn.GroupInfoApplyResultACK},
 	}
 	for _, message := range tests {
 		t.Run(message.MessageType().String(), func(t *testing.T) {
@@ -47,5 +49,16 @@ func TestCodecRejectsInvalidCurrentMessages(t *testing.T) {
 				t.Fatal("Marshal() accepted invalid message")
 			}
 		})
+	}
+}
+
+func TestCodecRejectsLegacyGroupResponseBodiesWithoutGroupID(t *testing.T) {
+	for _, payload := range [][]byte{
+		{1, byte(acn.MessageTypeAgentGroupingInvitationResponse), 1, byte(acn.GroupingDecisionAccept)},
+		{1, byte(acn.MessageTypeAgentGroupInfoNotificationResponse), 1, byte(acn.GroupInfoApplyResultACK)},
+	} {
+		if _, err := acn.Unmarshal(acn.Uplink, payload); err == nil {
+			t.Fatalf("Unmarshal(%x) accepted a group response without group_id", payload)
+		}
 	}
 }

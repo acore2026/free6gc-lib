@@ -17,8 +17,8 @@ func TestDocumentedControlPDUVectors(t *testing.T) {
 		wantType  acn.MessageType
 	}{
 		{name: "grouping accept", direction: acn.Downlink, hex: "010e30000967726f75702d303031", wantType: acn.MessageTypeAgentGroupingAccept},
-		{name: "invitation response", direction: acn.Uplink, hex: "01113100", wantType: acn.MessageTypeAgentGroupingInvitationResponse},
-		{name: "group info apply result", direction: acn.Uplink, hex: "01133200", wantType: acn.MessageTypeAgentGroupInfoNotificationResponse},
+		{name: "invitation response", direction: acn.Uplink, hex: "0111310000026731", wantType: acn.MessageTypeAgentGroupingInvitationResponse},
+		{name: "group info apply result", direction: acn.Uplink, hex: "0113320000026731", wantType: acn.MessageTypeAgentGroupInfoNotificationResponse},
 		{name: "network ability reject", direction: acn.Downlink, hex: "0116250203", wantType: acn.MessageTypeAgentNetworkAbilityReject},
 		{name: "publish accept", direction: acn.Downlink, hex: "011823", wantType: acn.MessageTypeAgentPublishAccept},
 	}
