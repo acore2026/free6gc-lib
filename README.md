@@ -8,6 +8,7 @@ Consolidated core 5G protocols, OpenAPI models, and support libraries for Free6G
 - [`openapi/`](./openapi): 3GPP 5G OpenAPI models and client SDKs.
 - [`nas/`](./nas): Non-Access Stratum (5GS NAS) protocol encoder/decoder, security context, and Agent Coordination Network (`acn`) extensions.
 - [`ngap/`](./ngap): Next Generation Application Protocol (NGAP) codec.
+- [`util/`](./util): shared utilities, including Milenage and UE authentication key derivation. See [source provenance](./util/README.md).
 
 ## Installation
 
