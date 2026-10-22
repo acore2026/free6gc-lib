@@ -54,6 +54,9 @@ const (
 	MessageTypeAgentPublishRequest                MessageType = 0x17
 	MessageTypeAgentPublishAccept                 MessageType = 0x18
 	MessageTypeAgentPublishReject                 MessageType = 0x19
+	MessageTypeAgentAccessStatusReport            MessageType = 0x1a
+	MessageTypeAgentAccessStatusAccept            MessageType = 0x1b
+	MessageTypeAgentAccessStatusReject            MessageType = 0x1c
 )
 
 func (t MessageType) String() string {
@@ -83,6 +86,9 @@ func (t MessageType) String() string {
 		MessageTypeAgentPublishRequest:                "ACN_AGENT_PUBLISH_REQUEST",
 		MessageTypeAgentPublishAccept:                 "ACN_AGENT_PUBLISH_ACCEPT",
 		MessageTypeAgentPublishReject:                 "ACN_AGENT_PUBLISH_REJECT",
+		MessageTypeAgentAccessStatusReport:            "ACN_AGENT_ACCESS_STATUS_REPORT",
+		MessageTypeAgentAccessStatusAccept:            "ACN_AGENT_ACCESS_STATUS_ACCEPT",
+		MessageTypeAgentAccessStatusReject:            "ACN_AGENT_ACCESS_STATUS_REJECT",
 	}
 	if name, ok := names[t]; ok {
 		return name
@@ -100,7 +106,7 @@ func (t MessageType) direction() (Direction, bool) {
 		MessageTypeAgentGroupingInvitationResponse,
 		MessageTypeAgentGroupInfoNotificationResponse,
 		MessageTypeAgentNetworkAbilityRequest,
-		MessageTypeAgentPublishRequest:
+		MessageTypeAgentPublishRequest, MessageTypeAgentAccessStatusReport:
 		return Uplink, true
 	case MessageTypeAgentRegisterAccept,
 		MessageTypeAgentRegisterReject,
@@ -117,7 +123,7 @@ func (t MessageType) direction() (Direction, bool) {
 		MessageTypeAgentNetworkAbilityAccept,
 		MessageTypeAgentNetworkAbilityReject,
 		MessageTypeAgentPublishAccept,
-		MessageTypeAgentPublishReject:
+		MessageTypeAgentPublishReject, MessageTypeAgentAccessStatusAccept, MessageTypeAgentAccessStatusReject:
 		return Downlink, true
 	default:
 		return 0, false

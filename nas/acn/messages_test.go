@@ -13,6 +13,9 @@ func TestCurrentMessagesRoundTrip(t *testing.T) {
 	proof := json.RawMessage(`{ "type":"JsonWebSignature2020", "verification_method":"did:key:k1", "jws":"sig", "future":true }`)
 	groupConfig := json.RawMessage(`{ "group_id":"g1", "members":["a1","a2"], "future":true }`)
 	messages := []acn.Message{
+		&acn.AgentAccessStatusReport{Header: header, AccessStatus: json.RawMessage(`{"agent_id":"a1","status":"inactive","timestamp":"2026-10-22T08:00:00.000Z","reason":"heartbeat_timeout"}`)},
+		&acn.AgentAccessStatusAccept{Header: header},
+		&acn.AgentAccessStatusReject{Header: header, Cause: acn.AccessStatusRejectStaleReport},
 		&acn.AgentRegisterRequest{Header: header, Owner: "u1", AgentName: "Alice", PublicKey: []byte{1, 2, 3}, Description: "Model-X", Timestamp: 1, Signature: []byte("sig"), Metadata: json.RawMessage(`{ "region":"CN", "os":"Linux", "version":"1.0.0", "future":true }`)},
 		&acn.AgentRegisterAccept{Header: header, AgentID: "a1", VC0: json.RawMessage(`{"id":"vc0"}`)},
 		&acn.AgentRegisterReject{Header: header, Cause: acn.RegisterRejectSignatureInvalid, FailedField: acn.RegisterFieldSignature},
@@ -62,6 +65,9 @@ func TestCurrentMessageAssignments(t *testing.T) {
 		t.Fatalf("Version1 = %#x, want 0x01", acn.Version1)
 	}
 	want := map[acn.MessageType]uint8{
+		acn.MessageTypeAgentAccessStatusReport:    0x1a,
+		acn.MessageTypeAgentAccessStatusAccept:    0x1b,
+		acn.MessageTypeAgentAccessStatusReject:    0x1c,
 		acn.MessageTypeAgentGroupingRequest:       0x0d,
 		acn.MessageTypeAgentGroupingAccept:        0x0e,
 		acn.MessageTypeAgentGroupingReject:        0x0f,

@@ -315,6 +315,11 @@ func (c *Codec) Marshal(message Message) ([]byte, error) {
 		err = encodeAgentNetworkAbilityReject(output, typed)
 	case *AgentPublishRequest:
 		err = c.encodeAgentPublishRequest(output, typed)
+	case *AgentAccessStatusReport:
+		err = c.encodeAccessStatus(output, typed)
+	case *AgentAccessStatusAccept:
+	case *AgentAccessStatusReject:
+		err = encodeAccessStatusReject(output, typed)
 	case *AgentPublishAccept:
 	case *AgentPublishReject:
 		err = encodeAgentPublishReject(output, typed)
@@ -454,6 +459,12 @@ func (c *Codec) Unmarshal(direction Direction, payload []byte) (Message, error) 
 		message, err = decodeAgentNetworkAbilityReject(input, header)
 	case MessageTypeAgentPublishRequest:
 		message, err = c.decodeAgentPublishRequest(input, header)
+	case MessageTypeAgentAccessStatusReport:
+		message, err = c.decodeAccessStatus(input, header)
+	case MessageTypeAgentAccessStatusAccept:
+		message = &AgentAccessStatusAccept{Header: header}
+	case MessageTypeAgentAccessStatusReject:
+		message, err = decodeAccessStatusReject(input, header)
 	case MessageTypeAgentPublishAccept:
 		message = &AgentPublishAccept{Header: header}
 	case MessageTypeAgentPublishReject:
